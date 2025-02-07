@@ -12,8 +12,55 @@ black = "^24.10.0"
 flake8 = "^7.1.1"
 flake8-mutable = "^1.2.0"
 flake8-pyproject = "^1.2.3"
+beautifulsoup4 = "^4.12.3"
+python-dotenv = "^1.0.1"
+requests = "^2.32.3"
+inquirer = "^3.4.0"
+selenium = "^4.26.1"
+httpx = {extras = ["http2"], version = "^0.27.2"}
+fake-useragent = "^1.5.1"
+lxml = "^5.3.0"
+playwright = "1.48.0"
+cssselect = "^1.2.0"
+pytest-playwright = "^0.6.2"
+pytest = "^8.3.4"
+sqlalchemy = "^2.0.37"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "google"            # Use the Google style guide for import sorting
+line_length = 80    
+multi_line_output = 3         # Set multi-line import statement output style (3: vertical hanging indent)
+include_trailing_comma = true # Add trailing commas to multi-line imports
+force_grid_wrap = 0           # Do not force line wrapping for multi-line imports
+use_parentheses = true        # Use parentheses for multi-line imports (using () in multi-line imports) 
+
+[tool.black]
+line-length = 80           # Set maximum line length to 80 characters
+target-version = ['py310'] # Specify the target Python version 
+include = '\.pyi?$'        # Apply black to Python files and Python stub files
+exclude = '''              # Exclude directories or file patterns from black formatting
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+''' 
+
+[tool.flake8]
+max-line-length = 90 
+extend-ignore = ["E203"]   # Ignore error including whitespace before colon
+
+plugins = [
+    "flake8_mutable"       # Prevent the use of mutable objects as default arguments in functions
+]
