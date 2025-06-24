@@ -16,6 +16,8 @@ from job_scraper.config.settings import JOB_CONFIG
 from job_scraper.scrapers.scraper import HTMLContent
 from job_scraper.scrapers.scraper import ParsedContent
 from job_scraper.scrapers.scraper import WebScraper
+from job_scraper.utils.timer_tracker import timer_with_logger
+
 
 logger = setup_logger(__name__)
 load_dotenv()
@@ -101,7 +103,7 @@ class WantedScraper(WebScraper):
             ]  # 세션을 fetch 메소드에 넘김
             results = await asyncio.gather(*tasks)
             return results
-
+        
     async def _fetch_dynamic(self, url: str, block_resource=False) -> str:
         browser = None
         try:
@@ -148,7 +150,8 @@ class WantedScraper(WebScraper):
             logger.info(f"Dynamic page Fetch failed... {e}")
         finally:
             await browser.close()
-
+    
+    @timer_with_logger(logger)
     async def fetch_job_details(self):
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
