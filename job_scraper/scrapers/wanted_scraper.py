@@ -16,6 +16,8 @@ from job_scraper.config.settings import JOB_CONFIG
 from job_scraper.scrapers.scraper import HTMLContent
 from job_scraper.scrapers.scraper import ParsedContent
 from job_scraper.scrapers.scraper import WebScraper
+from job_scraper.utils.timer_tracker import timer_with_logger
+
 
 logger = setup_logger(__name__)
 load_dotenv()
@@ -101,7 +103,7 @@ class WantedScraper(WebScraper):
             ]  # 세션을 fetch 메소드에 넘김
             results = await asyncio.gather(*tasks)
             return results
-
+        
     async def _fetch_dynamic(self, url: str, block_resource=False) -> str:
         browser = None
         try:
@@ -122,18 +124,15 @@ class WantedScraper(WebScraper):
                 page = await context.new_page()  # create a new page
 
                 # Browser request filter
-                await page.route(
-                    "**/*", self.filter_resource
-                )  # block images, media, fonts ,and ads
-
+                await page.route("**/*", self.filter_resource)  # block images, media, fonts ,and ads
                 await page.goto(url)  # go to the target page
                 await page.wait_for_timeout(5000)  # wait for 5 second
                 await page.wait_for_selector(
-                    "li.Card_Card__WdaEk", timeout=5000
+                    "li.Card_Card__aaatv", timeout=5000 # Before: Card_Card__WdaEk
                 )  # wait for the job postings to load
 
                 previous_count = len(
-                    await page.query_selector_all("li.Card_Card__WdaEk")
+                    await page.query_selector_all("li.Card_Card__aaatv") # Before: Card_Card__WdaEk
                 )
                 logger.info(f"previous_count: {previous_count}")
 
@@ -151,7 +150,8 @@ class WantedScraper(WebScraper):
             logger.info(f"Dynamic page Fetch failed... {e}")
         finally:
             await browser.close()
-
+    
+    @timer_with_logger(logger)
     async def fetch_job_details(self):
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
@@ -214,7 +214,7 @@ class WantedScraper(WebScraper):
         self, page, max_scrolls=50, scroll_delay=2000, callback=None
     ):
         previous_count = len(
-            await page.query_selector_all("li.Card_Card__WdaEk")
+            await page.query_selector_all("li.Card_Card__aaatv")  # Before: Card_Card__WdaEk
         )
         logger.info(f"🔢 Initial job postings count: {previous_count}")
 
@@ -230,7 +230,7 @@ class WantedScraper(WebScraper):
                 await callback(page)
 
             current_count = len(
-                await page.query_selector_all("li.Card_Card__WdaEk")
+                await page.query_selector_all("li.Card_Card__aaatv")  # Before: Card_Card__WdaEk
             )
             logger.info(f"🐳 Updated job postings count: {current_count}")
 
@@ -242,7 +242,7 @@ class WantedScraper(WebScraper):
 
     async def scrape_job_postings(self, page):
         try:
-            jobs = await page.query_selector_all("li.Card_Card__WdaEk")
+            jobs = await page.query_selector_all("li.Card_Card__aaatv")  # Before: Card_Card__WdaEk
 
             for job in jobs:
                 try:

@@ -12,7 +12,9 @@ def setup_logger(name):
     # 로그 파일 경로 설정 (모듈명 기반)
     log_dir = "logs"
     os.makedirs(log_dir, exist_ok=True)  # logs 폴더 없으면 생성
-    log_file = os.path.join("..",log_dir, f"{name}.log")  # 파일명 자동 설정
+    log_file = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                            log_dir, 
+                            f"{name}.log")  # 파일명 자동 설정
 
     # 파일 핸들러 설정
     file_handler = logging.FileHandler(log_file)
