@@ -3,10 +3,10 @@ from typing import Any, List, Type
 
 import httpx
 
-from job_scraper.config.logging_config import setup_logger
+from job_scraper.config.logging_config import create_development_logger
 from job_scraper.scrapers.scraper import WebScraper
 
-logger = setup_logger(__name__)
+logger = create_development_logger(__name__)
 
 
 class ScraperManager:
@@ -28,7 +28,7 @@ class ScraperManager:
         self.task_queue = asyc.Queue()
         self.jobs = jobs
 
-        self.logger = setup_logger(__name__)
+        self.logger = logger
 
     async def run(self):
         """

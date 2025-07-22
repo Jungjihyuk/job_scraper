@@ -11,7 +11,7 @@ import httpx
 from lxml import etree
 from playwright.async_api import async_playwright
 
-from job_scraper.config.logging_config import setup_logger
+from job_scraper.config.logging_config import create_development_logger
 from job_scraper.config.settings import JOB_CONFIG
 from job_scraper.scrapers.scraper import HTMLContent
 from job_scraper.scrapers.scraper import ParsedContent
@@ -19,9 +19,8 @@ from job_scraper.scrapers.scraper import WebScraper
 from job_scraper.utils.timer_tracker import timer_with_logger
 
 
-logger = setup_logger(__name__)
+logger = create_development_logger(__name__)
 load_dotenv()
-
 
 class WantedScraper(WebScraper):
 
@@ -290,7 +289,7 @@ class WantedScraper(WebScraper):
     async def scrape_job_details(self, page) -> Dict[str, str]:
         try:
             job_details_divs = await page.query_selector_all(
-                "div.JobDescription_JobDescription__paragraph__wrapper__G4CNd > div"
+                "div.JobDescription_JobDescription__paragraph__wrapper__WPrKC > div"
             )
             logger.info(f"Found {len(job_details_divs)} div elements.")
 

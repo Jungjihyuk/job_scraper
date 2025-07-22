@@ -4,11 +4,11 @@ import time
 
 import inquirer
 
-from job_scraper.config.logging_config import setup_logger
+from job_scraper.config.logging_config import create_development_logger
 from job_scraper.scrapers.scraper_manager import ScraperManager
 from job_scraper.scrapers.wanted_scraper import WantedScraper
 
-logger = setup_logger(__name__)
+logger = create_development_logger(__name__)
 
 questions = [
     inquirer.Checkbox(
