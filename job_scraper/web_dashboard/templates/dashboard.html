@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Scraper Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Dashboard</h1>
+            <p>채용공고 스크래핑 대시보드</p>
+        </div>
+
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="showTab('management')">🔍 스크래핑 관리</div>
+            <div class="nav-tab" onclick="showTab('deadline')">⏰ 마감일 순 조회</div>
+            <div class="nav-tab" onclick="showTab('recent')">📄 최근등록 공고</div>
+            <div class="nav-tab" onclick="showTab('statistics')">📊 통계분석</div>
+            <div class="nav-tab" onclick="showTab('skills')">🛠️ 스킬 분석</div>
+        </div>
+
+        <!-- 스크래핑 관리 탭 -->
+        <div id="management" class="tab-content active">
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-jobs">-</div>
+                    <div class="stat-label">총 채용공고</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-companies">-</div>
+                    <div class="stat-label">등록된 회사</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="recent-batches">-</div>
+                    <div class="stat-label">최근 스크래핑</div>
+                </div>
+            </div>
+
+            <div class="content-section">
+                <h2>🏢 주요 회사</h2>
+                <div id="companies-container">
+                    <div class="loading">데이터를 불러오는 중...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 마감일 순 조회 탭 -->
+        <div id="deadline" class="tab-content">
+            <h2>⏰ 마감일 임박 채용공고</h2>
+            <div class="loading">개발 예정 기능입니다.</div>
+        </div>
+
+        <!-- 최근등록 공고 탭 -->
+        <div id="recent" class="tab-content">
+            <h2>📄 최근 등록된 채용공고</h2>
+            <button class="btn" onclick="loadJobs()" style="margin-bottom: 20px;">새로고침</button>
+            <div id="jobs-container">
+                <div class="loading">데이터를 불러오는 중...</div>
+            </div>
+        </div>
+
+        <!-- 통계분석 탭 -->
+        <div id="statistics" class="tab-content">
+            <h2>📊 채용공고 통계 분석</h2>
+            <div class="loading">개발 예정 기능입니다.</div>
+        </div>
+
+        <!-- 스킬 분석 탭 -->
+        <div id="skills" class="tab-content">
+            <h2>🛠️ 기술 스택 분석</h2>
+            <div class="loading">개발 예정 기능입니다.</div>
+        </div>
+    </div>
+
+    <script>
+        let currentJobOffset = 0;
+        const jobsPerPage = 10;
+
+        function showTab(tabName) {
+            // 모든 탭 콘텐츠 숨기기
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 모든 네비게이션 탭 비활성화
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 선택된 탭 활성화
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                document.getElementById('total-jobs').textContent = data.total_jobs.toLocaleString();
+                document.getElementById('total-companies').textContent = data.total_companies.toLocaleString();
+                document.getElementById('recent-batches').textContent = data.recent_batches.length;
+            } catch (error) {
+                console.error('Stats loading error:', error);
+                document.getElementById('stats-grid').innerHTML = 
+                    '<div class="error">통계 데이터를 불러오지 못했습니다.</div>';
+            }
+        }
+
+        async function loadJobs(reset = true) {
+            if (reset) currentJobOffset = 0;
+            
+            try {
+                const response = await fetch(`/api/jobs?limit=${jobsPerPage}&offset=${currentJobOffset}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('jobs-container');
+                if (reset) container.innerHTML = '';
+                
+                if (data.jobs.length === 0) {
+                    container.innerHTML = '<div class="loading">채용공고가 없습니다.</div>';
+                    return;
+                }
+                
+                data.jobs.forEach(job => {
+                    const jobCard = document.createElement('div');
+                    jobCard.className = 'job-card';
+                    
+                    const tags = job.tags ? 
+                        (Array.isArray(job.tags) ? job.tags : [job.tags])
+                            .map(tag => `<span class="tag">${tag}</span>`).join('') 
+                        : '';
+                    
+                    jobCard.innerHTML = `
+                        <div class="job-title">${job.position || '미상'}</div>
+                        <div class="job-meta">
+                            <span>🏢 ${job.company_name || '미상'}</span>
+                            <span>📍 ${job.location || '미상'}</span>
+                            <span>💼 ${job.job_category || '미상'}</span>
+                            <span>👥 ${job.experience || '미상'}</span>
+                        </div>
+                        <div class="job-tags">${tags}</div>
+                    `;
+                    
+                    container.appendChild(jobCard);
+                });
+                
+                currentJobOffset += jobsPerPage;
+                
+                // 더 불러오기 버튼
+                if (data.jobs.length === jobsPerPage) {
+                    const loadMoreBtn = document.createElement('button');
+                    loadMoreBtn.className = 'btn';
+                    loadMoreBtn.textContent = '더 보기';
+                    loadMoreBtn.onclick = () => {
+                        loadMoreBtn.remove();
+                        loadJobs(false);
+                    };
+                    container.appendChild(loadMoreBtn);
+                }
+                
+            } catch (error) {
+                console.error('Jobs loading error:', error);
+                document.getElementById('jobs-container').innerHTML = 
+                    '<div class="error">채용공고를 불러오지 못했습니다.</div>';
+            }
+        }
+
+        async function loadCompanies() {
+            try {
+                const response = await fetch('/api/companies');
+                const data = await response.json();
+                
+                const container = document.getElementById('companies-container');
+                container.innerHTML = '';
+                
+                if (data.companies.length === 0) {
+                    container.innerHTML = '<div class="loading">등록된 회사가 없습니다.</div>';
+                    return;
+                }
+                
+                data.companies.forEach(company => {
+                    const companyCard = document.createElement('div');
+                    companyCard.className = 'job-card';
+                    
+                    companyCard.innerHTML = `
+                        <div class="job-title">${company.company_name}</div>
+                        <div class="job-meta">
+                            <span>📊 ${company.company_size || '미상'}</span>
+                            <span>🎯 채용공고: ${company.job_count}건</span>
+                            <span>${company.is_listed ? '📈 상장기업' : '🏢 비상장기업'}</span>
+                        </div>
+                    `;
+                    
+                    container.appendChild(companyCard);
+                });
+                
+            } catch (error) {
+                console.error('Companies loading error:', error);
+                document.getElementById('companies-container').innerHTML = 
+                    '<div class="error">회사 데이터를 불러오지 못했습니다.</div>';
+            }
+        }
+
+        // 페이지 로드 시 데이터 로딩
+        window.addEventListener('load', async () => {
+            await Promise.all([
+                loadStats(),
+                loadJobs(),
+                loadCompanies()
+            ]);
+        });
+    </script>
+</body>
+</html>
