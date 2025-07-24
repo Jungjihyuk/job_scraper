@@ -32,6 +32,14 @@ questions = [
 
 def get_job_selection():
     """직무 선택 처리"""
+    # 환경변수에서 먼저 확인
+    import os
+    selected_job = os.environ.get("SELECTED_JOB")
+    if selected_job:
+        logger.info(f"🌐 웹에서 선택된 직무: {selected_job}")
+        return selected_job
+    
+    # 환경변수가 없으면 CLI에서 선택
     answers = inquirer.prompt(questions)
     if answers is None or not answers["job"]:
         logger.error("❌ 직무를 선택하지 않았습니다.")
