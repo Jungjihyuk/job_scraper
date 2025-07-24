@@ -1,12 +1,11 @@
 """
 PostgreSQL 데이터베이스 연결 관리
 """
-from typing import Generator, Optional
+from typing import Generator
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.exc import SQLAlchemyError
 
 from job_scraper.database.config import db_config
 from job_scraper.database.models import Base
@@ -132,7 +131,8 @@ db_manager = DatabaseManager()
 # 편의 함수들
 def get_db_session() -> Generator[Session, None, None]:
     """데이터베이스 세션 획득 (FastAPI 의존성 주입용)"""
-    return db_manager.get_session()
+    with db_manager.get_session() as session:
+        yield session
 
 
 def init_database() -> bool:

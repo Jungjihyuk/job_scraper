@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Scraper Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Dashboard</h1>
+            <p>채용공고 스크래핑 대시보드</p>
+        </div>
+
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="showTab('management')">🔍 스크래핑 관리</div>
+            <div class="nav-tab" onclick="showTab('deadline')">⏰ 마감일 순 조회</div>
+            <div class="nav-tab" onclick="showTab('recent')">📄 최근등록 공고</div>
+            <div class="nav-tab" onclick="showTab('statistics')">📊 통계분석</div>
+            <div class="nav-tab" onclick="showTab('skills')">🛠️ 스킬 분석</div>
+        </div>
+
+        <!-- 스크래핑 관리 탭 -->
+        <div id="management" class="tab-content active">
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-jobs">-</div>
+                    <div class="stat-label">총 채용공고</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-companies">-</div>
+                    <div class="stat-label">등록된 회사</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="recent-batches">-</div>
+                    <div class="stat-label">최근 스크래핑</div>
+                </div>
+            </div>
+            <div class="content-section">
+                <h2>🚀 스크래핑 실행</h2>
+                <div class="scraping-controls">
+                    <select id="scraper-type">
+                        <option value="wanted">원티드</option>
+                        <option value="saramin">사람인</option>
+                        <option value="jobkorea">잡코리아</option>
+                    </select>
+                    <select id="job-selection">
+                        <option value="파이썬 개발자">파이썬 개발자</option>
+                        <option value="머신러닝 엔지니어">머신러닝 엔지니어</option>
+                        <option value="데이터 엔지니어">데이터 엔지니어</option>
+                        <option value="서버 개발자">서버 개발자</option>
+                        <option value="데이터 사이언티스트">데이터 사이언티스트</option>
+                        <option value="빅데이터 엔지니어">빅데이터 엔지니어</option>
+                        <option value=".NET 개발자">.NET 개발자</option>
+                    </select>
+                    <button id="scraping-btn" class="btn primary" onclick="toggleScraping()">
+                        스크래핑 시작
+                    </button>
+                    <div id="scraping-status"></div>
+                </div>
+                <div id="scraping-logs" style="display:none;">
+                    <h3>📋 실행 로그</h3>
+                    <div id="log-container" style="height:300px; overflow-y:scroll; background:#f8f9fa; padding:10px; border:1px solid #ddd; font-family:monospace; font-size:12px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 마감일 순 조회 탭 -->
+        <div id="deadline" class="tab-content">
+            <h2>⏰ 마감일 임박 채용공고</h2>
+            
+            <div class="filter-section">
+                <div class="filter-row">
+                    <label>직무:</label>
+                    <select id="job-category-filter">
+                        <option value="">전체</option>
+                    </select>
+                    <label>경력:</label>
+                    <select id="experience-filter">
+                        <option value="">전체</option>
+                    </select>
+                    <label>지역:</label>
+                    <select id="location-filter">
+                        <option value="">전체</option>
+                    </select>
+                    <button class="btn" onclick="loadDeadlineJobs()" style="margin-left: 15px;">조회</button>
+                </div>
+            </div>
+            
+            <div id="deadline-jobs-container">
+                <div class="loading">조회 버튼을 클릭하여 채용공고를 확인하세요.</div>
+            </div>
+        </div>
+
+        <!-- 최근등록 공고 탭 -->
+        <div id="recent" class="tab-content">
+            <h2>📄 최근 등록된 채용공고</h2>
+            <button class="btn" onclick="loadJobs()" style="margin-bottom: 20px;">새로고침</button>
+            <div id="jobs-container">
+                <div class="loading">데이터를 불러오는 중...</div>
+            </div>
+        </div>
+
+        <!-- 통계분석 탭 -->
+        <div id="statistics" class="tab-content">
+            <h2>📊 채용공고 통계 분석</h2>
+            <div class="loading">개발 예정 기능입니다.</div>
+        </div>
+
+        <!-- 스킬 분석 탭 -->
+        <div id="skills" class="tab-content">
+            <h2>🛠️ 기술 스택 분석</h2>
+            <div class="loading">개발 예정 기능입니다.</div>
+        </div>
+    </div>
+
+    <script>
+        let currentJobOffset = 0;
+        const jobsPerPage = 10;
+        async function loadJobCategories() {
+            try {
+                const response = await fetch('/api/job_postings/job');
+                const data = await response.json();
+      
+                const select = document.getElementById('job-category-filter');
+                // 기존 옵션들 제거 (전체 제외)
+                while (select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+      
+                // DB에서 가져온 카테고리들 추가
+                data.categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    select.appendChild(option);
+                });
+      
+            } catch (error) {
+                console.error('Job categories loading error:', error);
+            }
+        }
+
+        async function loadExperiences() {
+            try {
+                const response = await fetch('/api/job_postings/experience');
+                const data = await response.json();
+
+                const select = document.getElementById('experience-filter');
+                while (select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+
+                data.experiences.forEach(experience => {
+                    const option = document.createElement('option');
+                    option.value = experience;
+                    option.textContent = experience;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Experiences loading error:', error);
+            }
+        }
+
+        async function loadLocations() {
+            try {
+                const response = await fetch('/api/job_postings/location');
+                const data = await response.json();
+
+                const select = document.getElementById('location-filter');
+                while (select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+
+                data.locations.forEach(location => {
+                    const option = document.createElement('option');    
+                    option.value = location;
+                    option.textContent = location;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Locations loading error:', error);
+            }
+        }
+
+        function showTab(tabName) {
+            // 모든 탭 콘텐츠 숨기기
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 모든 네비게이션 탭 비활성화
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 선택된 탭 활성화
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/dashboard/stats');
+                const data = await response.json();
+                
+                document.getElementById('total-jobs').textContent = data.total_jobs.toLocaleString();
+                document.getElementById('total-companies').textContent = data.total_companies.toLocaleString();
+                document.getElementById('recent-batches').textContent = data.recent_batches.toLocaleString();
+            } catch (error) {
+                console.error('Stats loading error:', error);
+                document.getElementById('stats-grid').innerHTML = 
+                    '<div class="error">통계 데이터를 불러오지 못했습니다.</div>';
+            }
+        }
+
+        async function loadJobs(reset = true) {
+            if (reset) currentJobOffset = 0;
+            
+            try {
+                const response = await fetch('/api/job_postings/deadline');
+                const data = await response.json();
+                
+                const container = document.getElementById('jobs-container');
+                if (reset) container.innerHTML = '';
+                
+                if (data.jobs.length === 0) {
+                    container.innerHTML = '<div class="loading">채용공고가 없습니다.</div>';
+                    return;
+                }
+                
+                data.jobs.forEach(job => {
+                    const jobCard = document.createElement('div');
+                    jobCard.className = 'job-card';
+                    
+                    const tags = job.tags ? 
+                        (Array.isArray(job.tags) ? job.tags : [job.tags])
+                            .map(tag => `<span class="tag">${tag}</span>`).join('') 
+                        : '';
+                    
+                    jobCard.innerHTML = `
+                        <div class="job-title">${job.position || '미상'}</div>
+                        <div class="job-meta">
+                            <span>🏢 ${job.company_name || '미상'}</span>
+                            <span>📍 ${job.location || '미상'}</span>
+                            <span>💼 ${job.job_category || '미상'}</span>
+                            <span>👥 ${job.experience || '미상'}</span>
+                        </div>
+                        <div class="job-tags">${tags}</div>
+                    `;
+                    
+                    container.appendChild(jobCard);
+                });
+                
+                currentJobOffset += jobsPerPage;
+                
+                // 더 불러오기 버튼
+                if (data.jobs.length === jobsPerPage) {
+                    const loadMoreBtn = document.createElement('button');
+                    loadMoreBtn.className = 'btn';
+                    loadMoreBtn.textContent = '더 보기';
+                    loadMoreBtn.onclick = () => {
+                        loadMoreBtn.remove();
+                        loadJobs(false);
+                    };
+                    container.appendChild(loadMoreBtn);
+                }
+                
+            } catch (error) {
+                console.error('Jobs loading error:', error);
+                document.getElementById('jobs-container').innerHTML = 
+                    '<div class="error">채용공고를 불러오지 못했습니다.</div>';
+            }
+        }
+
+        async function loadCompanies() {
+            try {
+                const response = await fetch('/api/companies');
+                const data = await response.json();
+                
+                const container = document.getElementById('companies-container');
+                container.innerHTML = '';
+                
+                if (data.companies.length === 0) {
+                    container.innerHTML = '<div class="loading">등록된 회사가 없습니다.</div>';
+                    return;
+                }
+                
+                data.companies.forEach(company => {
+                    const companyCard = document.createElement('div');
+                    companyCard.className = 'job-card';
+                    
+                    companyCard.innerHTML = `
+                        <div class="job-title">${company.company_name}</div>
+                        <div class="job-meta">
+                            <span>📊 ${company.company_size || '미상'}</span>
+                            <span>🎯 채용공고: ${company.job_count}건</span>
+                            <span>${company.is_listed ? '📈 상장기업' : '🏢 비상장기업'}</span>
+                        </div>
+                    `;
+                    
+                    container.appendChild(companyCard);
+                });
+                
+            } catch (error) {
+                console.error('Companies loading error:', error);
+                document.getElementById('companies-container').innerHTML = 
+                    '<div class="error">회사 데이터를 불러오지 못했습니다.</div>';
+            }
+        }
+
+        async function loadDeadlineJobs() {
+            const jobCategory = document.getElementById('job-category-filter').value;
+            const experience = document.getElementById('experience-filter').value;
+            const location = document.getElementById('location-filter').value;
+            
+            try {
+                const params = new URLSearchParams();
+                if (jobCategory) params.append('position', jobCategory);
+                if (experience) params.append('experience', experience);
+                if (location) params.append('location', location);
+                
+                const response = await fetch(`/api/job_postings/deadline?${params}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('deadline-jobs-container');
+                container.innerHTML = '';
+                
+                if (data.jobs.length === 0) {
+                    container.innerHTML = '<div class="loading">조건에 맞는 채용공고가 없습니다.</div>';
+                    return;
+                }
+                
+                data.jobs.forEach(job => {
+                    const jobCard = document.createElement('div');
+                    jobCard.className = 'job-card';
+                    
+                    // D-day 계산 (임시로 랜덤 값 사용)
+                    const daysLeft = Math.floor(Math.random() * 14) + 1;
+                    let deadlineClass = 'deadline-safe';
+                    let deadlineIcon = '🟢';
+                    
+                    if (daysLeft <= 3) {
+                        deadlineClass = 'deadline-urgent';
+                        deadlineIcon = '🔥';
+                    } else if (daysLeft <= 7) {
+                        deadlineClass = 'deadline-warning';
+                        deadlineIcon = '⚠️';
+                    }
+                    
+                    // benefit을 tags로 표시 (실제로는 benefits 필드가 있어야 함)
+                    const benefits = job.benefits || job.tags || [];
+                    const benefitTags = Array.isArray(benefits) ? benefits : 
+                        (benefits ? [benefits] : ['유연근무', '성과급', '교육지원']);
+                    
+                    jobCard.innerHTML = `
+                        <div class="job-title">${job.position || '미상'}</div>
+                        <div class="job-meta">
+                            <span>🏢 ${job.company_name || '미상'}</span>
+                            <span>📍 ${job.location || '미상'}</span>
+                            <span class="${deadlineClass}">${deadlineIcon} D-${daysLeft}</span>
+                        </div>
+                        <div class="job-tags">
+                            ${benefitTags.map(benefit => `<span class="tag">${benefit}</span>`).join('')}
+                        </div>
+                    `;
+                    
+                    container.appendChild(jobCard);
+                });
+                
+            } catch (error) {
+                console.error('Deadline jobs loading error:', error);
+                document.getElementById('deadline-jobs-container').innerHTML = 
+                    '<div class="error">채용공고를 불러오지 못했습니다.</div>';
+            }
+        }
+
+        let socket = null;
+        let isScrapingRunning = false;
+
+        function connectWebSocket() {
+            socket = new WebSocket(`ws://${window.location.host}/ws`);
+            
+            socket.onopen = function(event) {
+                console.log('✅ WebSocket 연결 성공:', event);
+            };
+            
+            socket.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleScrapingUpdate(data);
+                } catch (error) {
+                    console.error('메시지 파싱 에러:', error, event.data);
+                }
+            };
+            
+            socket.onclose = function(event) {
+                console.log('❌ WebSocket 연결 종료:', event.code, event.reason);
+            };
+            
+            socket.onerror = function(error) {
+                console.error('🚨 WebSocket 에러:', error);
+            };
+        }
+
+        function updateScrapingButton(isRunning) {
+            const btn = document.getElementById('scraping-btn');
+            if (isRunning) {
+                btn.textContent = '스크래핑 중지';
+                btn.className = 'btn danger';
+                isScrapingRunning = true;
+            } else {
+                btn.textContent = '스크래핑 시작';
+                btn.className = 'btn primary';
+                isScrapingRunning = false;
+            }
+        }
+
+        function handleScrapingUpdate(data) {
+            const statusDiv = document.getElementById('scraping-status');
+            const logsDiv = document.getElementById('scraping-logs');
+            const logContainer = document.getElementById('log-container');
+            
+            if (data.type === 'status') {
+                statusDiv.innerHTML = `<div class="loading">${data.message}</div>`;
+                logsDiv.style.display = 'block';
+                updateScrapingButton(true);
+                
+            } else if (data.type === 'log') {
+                const logEntry = document.createElement('div');
+                logEntry.textContent = `${new Date().toLocaleTimeString()} - ${data.message}`;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+                
+            } else if (data.type === 'complete') {
+                statusDiv.innerHTML = `<div class="success">${data.message}</div>`;
+                updateScrapingButton(false);
+                setTimeout(() => loadStats(), 1000);
+                
+            } else if (data.type === 'error') {
+                statusDiv.innerHTML = `<div class="error">${data.message}</div>`;
+                updateScrapingButton(false);
+                
+            } else if (data.type === 'stopped') {
+                statusDiv.innerHTML = `<div class="error">${data.message}</div>`;
+                updateScrapingButton(false);
+            }
+        }
+
+        async function toggleScraping() {
+            if (isScrapingRunning) {
+                await stopScraping();
+            } else {
+                await startScraping();
+            }
+        }
+
+        async function startScraping() {
+            const scraperType = document.getElementById('scraper-type').value;
+            const jobSelection = document.getElementById('job-selection').value;
+                        
+            // WebSocket 연결 확인
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                connectWebSocket();
+                // 연결 대기
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+                        
+            try {
+                const response = await fetch('/api/scraping/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scraper_type: scraperType,
+                        job: jobSelection
+                    })
+                });
+                                
+                if (!response.ok) {
+                    const data = await response.json();
+                    console.error('❌ API 에러:', data);
+                    document.getElementById('scraping-status').innerHTML = 
+                        `<div class="error">❌ ${data.detail}</div>`;
+                } else {
+                    const data = await response.json();
+                    console.log('✅ API 성공:', data);
+                }
+                
+            } catch (error) {
+                document.getElementById('scraping-status').innerHTML = 
+                    `<div class="error">❌ 스크래핑 시작 실패: ${error.message}</div>`;
+            }
+        }
+
+        async function stopScraping() {
+            try {
+                const response = await fetch('/api/scraping/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    document.getElementById('scraping-status').innerHTML = 
+                        `<div class="error">❌ ${data.detail}</div>`;
+                }
+                
+            } catch (error) {
+                document.getElementById('scraping-status').innerHTML = 
+                    `<div class="error">❌ 스크래핑 중지 실패: ${error.message}</div>`;
+            }
+        }
+
+        async function checkScrapingStatus() {
+            try {
+                const response = await fetch('/api/scraping/status');
+                const data = await response.json();
+                updateScrapingButton(data.is_scraping);
+            } catch (error) {
+                console.error('상태 확인 실패:', error);
+            }
+        }
+
+
+        // 페이지 로드 시 데이터 로딩
+        window.addEventListener('load', async () => {
+            connectWebSocket();
+            await Promise.all([
+                loadStats(),
+                loadJobs(),
+                loadCompanies(),
+                loadJobCategories(),
+                loadExperiences(),
+                loadLocations(),
+                checkScrapingStatus()  // 현재 스크래핑 상태 확인
+            ]);
+        });
+    </script>
+</body>
+</html>
