@@ -123,6 +123,13 @@ body {
     color: #7f8c8d;
 }
 
+.success {
+    color: #28a745;
+    padding: 10px;
+    background-color: #d4edda;
+    border-radius: 4px;
+}
+
 .error {
     background: #ffebee;
     color: #c62828;
@@ -145,6 +152,21 @@ body {
 .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn.primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn.danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.btn.danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
 }
 
 .nav-tabs {
@@ -214,4 +236,71 @@ body {
     .nav-tab {
         flex: 1 1 100%;
     }
+}
+
+.filter-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.filter-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-row label {
+    font-weight: 600;
+    color: #2c3e50;
+    min-width: 80px;
+}
+
+.filter-row select {
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    min-width: 150px;
+}
+
+.filter-row select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.deadline-urgent {
+    color: #e74c3c !important;
+    font-weight: bold;
+}
+
+.deadline-warning {
+    color: #f39c12 !important;
+    font-weight: bold;
+}
+
+.deadline-safe {
+    color: #27ae60 !important;
+    font-weight: bold;
+}
+
+.scraping-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.scraping-controls select {
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    min-width: 150px;
+}
+
+.scraping-controls select:focus {
+    outline: none;
+    border-color: #667eea;
 }
