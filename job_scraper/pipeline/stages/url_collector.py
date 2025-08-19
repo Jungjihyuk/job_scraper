@@ -7,7 +7,22 @@ from job_scraper.pipeline.core.site_scraper import ScraperFactory
 
 
 class URLCollectorStage(BaseStage):
-    """🌍 URL 수집 Stage - 사이트 어댑터를 통한 확장 가능한 URL 수집"""
+    """🌍 채용공고 기본정보 수집 Stage
+    
+    실제 역할:
+    - 채용공고 목록 페이지를 스크롤하며 새로운 공고 발견
+    - 각 공고의 URL + 기본 메타데이터 수집 (company, position, posting_id, job_category)
+    - 상세 스크래핑 전 필요한 최소한의 정보만 추출하여 효율성 확보
+    
+    수집 데이터 (JobPostingData):
+    - full_url: 상세 페이지 URL
+    - position: 직무명 (리스트에서 미리 확인 가능)
+    - company: 회사명
+    - posting_id: 공고 고유 ID  
+    - job_category: 직무 카테고리
+    
+    참고: Stage 이름은 파이프라인 흐름의 직관성을 위해 'URLCollector'로 유지
+    """
     
     def __init__(self):
         super().__init__("URLCollector", enable_duplicate_check=True)
@@ -61,20 +76,24 @@ class URLCollectorStage(BaseStage):
             self.logger.info("🔒 Browser session closed")
     
     async def process(self, config: PipelineConfig) -> List[JobPostingData]:
-        """무한스크롤로 새로운 URL만 수집 (반복 호출 지원)"""
+        """단일 스크롤로 새로운 URL만 수집 (반복 호출 지원)"""
         # 브라우저 세션이 없으면 초기화
         if self.browser is None:
             await self.initialize_browser(config)
         
         # 단일 스크롤 실행
-        new_job_posts = await self._infinite_scroll(self.page, scroll_delay=config.scroll_delay)
-        self.logger.info(f"✅ Collected {len(new_job_posts)} new URLs (total: {len(self.collected_url_set)})")
-        return new_job_posts
-
-    async def _infinite_scroll(self, page, scroll_delay: int) -> List[JobPostingData]:
-        """단일 스크롤 실행 및 새로운 URL만 수집"""
-        new_job_posts = []
+        has_new_content = await self._single_scroll(self.page, scroll_delay=config.scroll_delay)
+        if not has_new_content:
+            self.logger.info(f"🚧 No new jobs found after scroll")
+            return []
         
+        # 새로운 JobPostingData 객체들 수집
+        new_job_posting_data = await self._collect_new_job_posting_data(self.page)
+        self.logger.info(f"✅ Collected {len(new_job_posting_data)} new job postings (total: {len(self.collected_url_set)})")
+        return new_job_posting_data
+
+    async def _single_scroll(self, page, scroll_delay: int) -> bool:
+        """단일 스크롤 수행하여 새 컨텐츠 로드 여부 반환"""
         # 스크롤 전 상태 확인
         previous_count = len(await page.query_selector_all(self.scraper.selectors["post_list"]))
         self.logger.info(f"📊 Current job postings: {previous_count}")
@@ -82,19 +101,26 @@ class URLCollectorStage(BaseStage):
         # 사이트별 스크롤 실행
         has_new_content = await self.scraper.scroll_page(page, scroll_delay)
         
-        if not has_new_content:
-            self.logger.info(f"🚧 No new jobs found after scroll")
-            return []  # 새로운 URL이 없으면 빈 리스트 반환
-        
-        # 현재 페이지에서 새로운 URL만 추출
-        job_posting_urls = await self.scraper.extract_job_posting_urls(page)
-        for job_post in job_posting_urls:
-            if job_post.full_url not in self.collected_url_set:
-                new_job_posts.append(job_post)
-                self.collected_url_set.add(job_post.full_url)
-                self.update_metrics(processed=1)
-                self.logger.debug(f"🆕 New URL: {job_post.full_url}")
+        # 스크롤 후 상태 확인
         current_count = len(await page.query_selector_all(self.scraper.selectors["post_list"]))
-        self.logger.info(f"📈 After scroll: {current_count} total jobs, {len(new_job_posts)} new URLs")
-        return new_job_posts
+        self.logger.info(f"📈 After scroll: {current_count} total jobs")
+        
+        return has_new_content
+
+    async def _collect_new_job_posting_data(self, page) -> List[JobPostingData]:
+        """현재 페이지에서 새로운 JobPostingData만 추출 및 중복 제거"""
+        new_job_posting_data = []
+        
+        # 현재 페이지에서 모든 JobPostingData 객체 추출
+        all_job_posting_data = await self.scraper.extract_job_posting_data(page)
+        
+        # 새로운 URL만 필터링하여 JobPostingData 수집
+        for job_posting in all_job_posting_data:
+            if job_posting.full_url not in self.collected_url_set:
+                new_job_posting_data.append(job_posting)
+                self.collected_url_set.add(job_posting.full_url)
+                self.update_metrics(processed=1)
+                self.logger.debug(f"🆕 New job posting: {job_posting.position} at {job_posting.company}")
+        
+        return new_job_posting_data
     

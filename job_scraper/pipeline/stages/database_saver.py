@@ -18,6 +18,7 @@ from job_scraper.database.models import (
     ScrapingBatch, ScrapingTask, ScrapedUrl, 
     JobPosting, Company, JobCategory, Location
 )
+from job_scraper.utils.deadline_parser import DeadlineParser
 
 
 class DatabaseSaverStage(BaseStage):
@@ -25,6 +26,7 @@ class DatabaseSaverStage(BaseStage):
     
     def __init__(self):
         super().__init__("DatabaseSaver")
+        self.deadline_parser = DeadlineParser()
         self.batch_id = None
         self.session_id = str(uuid4())[:8]
     
@@ -130,12 +132,11 @@ class DatabaseSaverStage(BaseStage):
         except Exception as e: 
             self.logger.error(f"❌ Failed to update batch status: {e}") 
     
-    def create_task(self, task_type: str, url_count: int = 0) -> int: 
+    def create_task(self, task_type: str) -> int: 
         """스크래핑 테스크 생성 (각 스테이지 별)
 
         Args:
             task_type (str): 스테이지 이름 
-            url_count (int): 처리할 URL 개수
 
         Returns:
             int: 생성된 task의 ID
@@ -156,7 +157,6 @@ class DatabaseSaverStage(BaseStage):
                     batch_id=self.batch_id,
                     task_type=task_type,
                     status="running",
-                    url_count=url_count,
                     started_at=datetime.now(), 
                 )
                 session.add(task)
@@ -277,8 +277,13 @@ class DatabaseSaverStage(BaseStage):
                         location = self._get_or_create_location(session, job_details)
                         
                         # 채용공고 저장
+                        # 마감일 처리
+                        deadline_text = job_details.job_description.get("deadline", "")
+                        deadline_date, is_always_recruiting = self.deadline_parser.parse_deadline(deadline_text)
+                        
                         job_posting = JobPosting(
                             posting_id=job_details.job_url.posting_id,
+                            original_url=job_details.job_url.full_url,
                             job_category_id=job_category.job_category_id,
                             company_id=company.company_id,
                             location_id=location.location_id,
@@ -291,7 +296,8 @@ class DatabaseSaverStage(BaseStage):
                             main_tasks=job_details.job_description.get("main_tasks", ""),
                             requirements=job_details.job_description.get("requirements", ""),
                             tags=job_details.job_description.get("tags", {}),
-                            deadline=job_details.job_description.get("deadline", ""),
+                            deadline=deadline_date,
+                            is_always_recruiting=is_always_recruiting,
                             posted_date=job_details.posted_date
                         )
                         
@@ -335,6 +341,13 @@ class DatabaseSaverStage(BaseStage):
     
     def _get_or_create_job_category(self, session: Session, job_details: JobDetails) -> JobCategory:
         """직무 카테고리 조회 또는 생성"""
+        # 정규화된 job_specialty 값 추출
+        job_specialty = None
+        if hasattr(job_details, 'job_specialty') and job_details.job_specialty:
+            job_specialty = job_details.job_specialty
+        elif isinstance(job_details, dict) and 'job_specialty' in job_details:
+            job_specialty = job_details['job_specialty']
+        
         job_category = session.query(JobCategory).filter_by(
             job_category=job_details.job_url.job_category,
             job_field=job_details.job_field,
@@ -345,10 +358,16 @@ class DatabaseSaverStage(BaseStage):
             job_category = JobCategory(
                 job_category=job_details.job_url.job_category,
                 job_field=job_details.job_field,
+                job_specialty=job_specialty,  # 정규화된 직무명 저장
                 scraper_type="wanted"
             )
             session.add(job_category)
             session.commit()
+        else:
+            # 기존 카테고리가 있어도 job_specialty가 비어있고 새로운 값이 있으면 업데이트
+            if not job_category.job_specialty and job_specialty:
+                job_category.job_specialty = job_specialty
+                session.commit()
         
         return job_category
     
