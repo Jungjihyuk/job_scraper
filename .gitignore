@@ -87,6 +87,7 @@ pip-delete-this-directory.txt
 
 # logging
 *.log
+logs/
 
 # Unit test / coverage reports
 htmlcov/
@@ -223,3 +224,4 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+logs/
