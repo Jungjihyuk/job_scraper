@@ -5,7 +5,7 @@ from fastapi.websockets import WebSocketState
 import os
 
 from job_scraper.database.connection import init_database
-from job_scraper.web_dashboard.api.v1 import dashboard, job_postings, scraping
+from job_scraper.web_dashboard.api.v1 import dashboard, job_postings, scraping, statistic, companies
 
 # WebSocket 연결 관리자
 class ConnectionManager:
@@ -57,6 +57,8 @@ app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__
 app.include_router(dashboard.router)
 app.include_router(job_postings.router)
 app.include_router(scraping.router)
+app.include_router(statistic.router)
+app.include_router(companies.router)
 
 # 데이터베이스 초기화
 init_database()

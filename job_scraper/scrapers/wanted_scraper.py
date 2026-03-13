@@ -229,7 +229,7 @@ class WantedScraper(WebScraper):
                 await callback(page)
 
             current_count = len(
-                await page.query_selector_all("li.Card_Card__aaatv")  # Before: Card_Card__WdaEk
+                await page.query_selector_all("li.Card_Card__aaatv")  # Before: Card_Card__WdaEk 
             )
             logger.info(f"🐳 Updated job postings count: {current_count}")
 
@@ -241,7 +241,7 @@ class WantedScraper(WebScraper):
 
     async def scrape_job_postings(self, page):
         try:
-            jobs = await page.query_selector_all("li.Card_Card__aaatv")  # Before: Card_Card__WdaEk
+            jobs = await page.query_selector_all("li.Card_Card__aaatv")  # Before: Card_Card__WdaEk 
 
             for job in jobs:
                 try:

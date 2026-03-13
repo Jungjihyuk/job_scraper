@@ -2,13 +2,13 @@
 Database models for job scraper application based on PostgreSQL schema.
 """
 from sqlalchemy import (
-    Column, Integer, String, Text, TIMESTAMP, Boolean, 
+    Column, Integer, String, Text, TIMESTAMP, Boolean, DATE,
     ForeignKey, DECIMAL, JSON, Index, UniqueConstraint
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-
+       
 Base = declarative_base()
 
 
@@ -42,7 +42,6 @@ class ScrapingTask(Base):
     batch_id = Column(Integer, ForeignKey('scraping_batches.id'), nullable=False)
     task_type = Column(String(50), nullable=False)  # url_collector/url_validator/content_scraper/db_saver/total
     status = Column(String(20), nullable=False)  # pending/running/completed/failed
-    url_count = Column(Integer)
     success_count = Column(Integer)
     fail_count = Column(Integer)
     retry_count = Column(Integer, default=0)
@@ -146,14 +145,43 @@ class Location(Base):
     )
 
 
+class ExperienceCategory(Base):
+    __tablename__ = 'experience_categories'
+    
+    experience_category_id = Column(Integer, primary_key=True)
+    raw_experience = Column(String(100), nullable=False, unique=True)
+    standardized_experience = Column(String(50))
+    min_years = Column(Integer)
+    max_years = Column(Integer)
+    is_fresh_welcome = Column(Boolean, default=False)
+    confidence = Column(DECIMAL(3, 2))
+    matching_method = Column(String(50))
+    manual_review = Column(Boolean, default=False)
+    correction = Column(String(50))
+    review_note = Column(Text)
+    created_at = Column(TIMESTAMP, default=func.current_timestamp())
+    updated_at = Column(TIMESTAMP, default=func.current_timestamp())
+    
+    # Relationships
+    job_postings = relationship("JobPosting", back_populates="experience_category")
+    
+    __table_args__ = (
+        Index('idx_experience_standardized', 'standardized_experience'),
+        Index('idx_experience_years', 'min_years', 'max_years'),
+        Index('idx_experience_fresh', 'is_fresh_welcome'),
+    )
+
+
 class JobPosting(Base):
     __tablename__ = 'job_posting'
     
     id = Column(Integer, primary_key=True)
     posting_id = Column(String(100), unique=True, nullable=False)
+    original_url = Column(String(2048))  # 원본 채용공고 URL
     job_category_id = Column(Integer, ForeignKey('job_categories.job_category_id'), nullable=False)
     company_id = Column(Integer, ForeignKey('companies.company_id'), nullable=False)
     location_id = Column(Integer, ForeignKey('locations.location_id'), nullable=False)
+    experience_category_id = Column(Integer, ForeignKey('experience_categories.experience_category_id'), nullable=True)
     experience = Column(String(50))
     position = Column(String(255))
     position_detail = Column(Text)
@@ -163,17 +191,22 @@ class JobPosting(Base):
     benefits = Column(Text)
     tags = Column(JSON)
     hiring_process = Column(Text)
-    deadline = Column(String(50))
+    deadline = Column(DATE)  # 실제 마감일 (상시채용인 경우 NULL)
+    is_always_recruiting = Column(Boolean, default=False)  # 상시채용 여부
     posted_date = Column(TIMESTAMP)
     
     # Relationships
     company = relationship("Company", back_populates="job_postings")
     job_category = relationship("JobCategory", back_populates="job_postings")
     location = relationship("Location", back_populates="job_postings")
+    experience_category = relationship("ExperienceCategory", back_populates="job_postings")
     
     __table_args__ = (
         Index('idx_job_posting_company', 'company_id'),
         Index('idx_job_posting_location', 'location_id'),
         Index('idx_job_posting_category', 'job_category_id'),
+        Index('idx_job_posting_experience', 'experience_category_id'),
         Index('idx_job_posting_posted_date', 'posted_date'),
+        Index('idx_job_posting_deadline', 'deadline'),
+        Index('idx_job_posting_always_recruiting', 'is_always_recruiting'),
     )

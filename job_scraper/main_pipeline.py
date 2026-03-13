@@ -58,8 +58,11 @@ async def main(opt):
         bacth_size=10,
         request_timeout=10,
         enable_duplicate_check=True,
-        output_format="json",
-        output_path="pipeline_output/"
+        # 저장 설정
+        save_to_database=True,
+        save_to_local=True,  # 로컬 JSON 저장도 활성화
+        local_output_format="json",
+        local_output_path="logs/"
     )
     logger.info(f"⚙️ Pipeline Config:")
     logger.info(f"   🎯 Job: {config.job}")

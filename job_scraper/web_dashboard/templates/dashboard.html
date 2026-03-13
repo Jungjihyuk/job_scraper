@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Scraper Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -17,8 +21,10 @@
             <div class="nav-tab active" onclick="showTab('management')">🔍 스크래핑 관리</div>
             <div class="nav-tab" onclick="showTab('deadline')">⏰ 마감일 순 조회</div>
             <div class="nav-tab" onclick="showTab('recent')">📄 최근등록 공고</div>
+            <div class="nav-tab" onclick="showTab('recommendations')">🎯 추천 공고</div>
             <div class="nav-tab" onclick="showTab('statistics')">📊 통계분석</div>
             <div class="nav-tab" onclick="showTab('skills')">🛠️ 스킬 분석</div>
+            <div class="nav-tab" onclick="showTab('report')">🏢 기업 리포트</div>
         </div>
 
         <!-- 스크래핑 관리 탭 -->
@@ -85,6 +91,10 @@
                     <select id="location-filter">
                         <option value="">전체</option>
                     </select>
+                    <label>
+                        <input type="checkbox" id="exclude-expired-filter" checked style="margin: 0 5px;">
+                        마감된 공고 제외
+                    </label>
                     <button class="btn" onclick="loadDeadlineJobs()" style="margin-left: 15px;">조회</button>
                 </div>
             </div>
@@ -96,27 +106,74 @@
 
         <!-- 최근등록 공고 탭 -->
         <div id="recent" class="tab-content">
-            <h2>📄 최근 등록된 채용공고</h2>
-            <button class="btn" onclick="loadJobs()" style="margin-bottom: 20px;">새로고침</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">📄 최근 등록된 채용공고</h2>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <label>
+                        <input type="checkbox" id="exclude-always-recruiting" style="margin: 0 5px;">
+                        상시채용 제외
+                    </label>
+                    <button class="btn" onclick="loadJobs()">새로고침</button>
+                </div>
+            </div>
             <div id="jobs-container">
                 <div class="loading">데이터를 불러오는 중...</div>
             </div>
         </div>
 
-        <!-- 통계분석 탭 -->
-        <div id="statistics" class="tab-content">
-            <h2>📊 채용공고 통계 분석</h2>
+        <!-- AI 추천 공고 탭 -->
+        <div id="recommendations" class="tab-content">
+            <h2>🎯 AI 맞춤형 채용 공고 추천</h2>
             <div class="loading">개발 예정 기능입니다.</div>
         </div>
 
-        <!-- 스킬 분석 탭 -->
+        <!-- 통계분석 탭 -->
+        <div id="statistics" class="tab-content">
+            <h2>📊 지역별 직무 분포</h2>
+            <div style="width: 95%; margin: auto;">
+                <canvas id="specialtyByLocationChart"></canvas>
+            </div>
+            <hr class="divider">
+            <h2>📊 직무별 경력 분포</h2>
+            <div style="width: 95%; margin: auto; margin-top: 50px;">
+                <canvas id="experienceBySpecialtyChart"></canvas>
+            </div>
+            <hr class="divider">
+            <h2>📈 직무별 채용 공고 추이</h2>
+            <div class="filter-section" style="justify-content: flex-start; margin-bottom: 20px;">
+                <label for="trend-year-filter">연도 선택:</label>
+                <select id="trend-year-filter" onchange="loadPostingTrends()" style="margin-left: 10px;">
+                    <option value="">전체</option>
+                </select>
+                <label for="trend-job-category-filter" style="margin-left: 20px;">직무 선택:</label>
+                <select id="trend-job-category-filter" onchange="loadPostingTrends()" style="margin-left: 10px;">
+                    <option value="">전체</option>
+                </select>
+            </div>
+            <div style="position: relative; width: 95%; margin: auto;">
+                <button class="btn btn-sm" onclick="trendsChart.resetZoom()" style="position: absolute; top: -40px; right: 10px; z-index: 1000;">줌 리셋</button>
+                <canvas id="postingTrendsChart"></canvas>
+            </div>
+        </div>
+
         <div id="skills" class="tab-content">
             <h2>🛠️ 기술 스택 분석</h2>
             <div class="loading">개발 예정 기능입니다.</div>
         </div>
+
+        <!-- 기업 리포트 탭 -->
+        <div id="report" class="tab-content">
+            <h2>🏢 기업별 상세 리포트</h2>
+            <div class="loading">개발 예정 기능입니다.</div>
+        </div>
+
+        
     </div>
 
     <script>
+        // 전역으로 차트 플러그인 등록
+        Chart.register(ChartDataLabels, ChartZoom);
+
         let currentJobOffset = 0;
         const jobsPerPage = 10;
         async function loadJobCategories() {
@@ -124,18 +181,24 @@
                 const response = await fetch('/api/job_postings/job');
                 const data = await response.json();
       
-                const select = document.getElementById('job-category-filter');
+                const select1 = document.getElementById('job-category-filter');
+                const select2 = document.getElementById('trend-job-category-filter');
+                
                 // 기존 옵션들 제거 (전체 제외)
-                while (select.children.length > 1) {
-                    select.removeChild(select.lastChild);
-                }
+                while (select1.children.length > 1) select1.removeChild(select1.lastChild);
+                while (select2.children.length > 1) select2.removeChild(select2.lastChild);
       
                 // DB에서 가져온 카테고리들 추가
                 data.categories.forEach(category => {
-                    const option = document.createElement('option');
-                    option.value = category;
-                    option.textContent = category;
-                    select.appendChild(option);
+                    const option1 = document.createElement('option');
+                    option1.value = category;
+                    option1.textContent = category;
+                    select1.appendChild(option1);
+
+                    const option2 = document.createElement('option');
+                    option2.value = category;
+                    option2.textContent = category;
+                    select2.appendChild(option2);
                 });
       
             } catch (error) {
@@ -220,7 +283,13 @@
             if (reset) currentJobOffset = 0;
             
             try {
-                const response = await fetch('/api/job_postings/deadline');
+                const excludeAlwaysRecruiting = document.getElementById('exclude-always-recruiting').checked;
+                const params = new URLSearchParams();
+                if (excludeAlwaysRecruiting) {
+                    params.append('exclude_always_recruiting', 'true');
+                }
+                
+                const response = await fetch(`/api/job_postings/recent?${params}`);
                 const data = await response.json();
                 
                 const container = document.getElementById('jobs-container');
@@ -240,13 +309,19 @@
                             .map(tag => `<span class="tag">${tag}</span>`).join('') 
                         : '';
                     
+                    const jobTitle = job.original_url ? 
+                        `<a href="${job.original_url}" target="_blank" rel="noopener noreferrer" class="job-title-link">${job.position || '미상'}</a>` :
+                        job.position || '미상';
+                    
                     jobCard.innerHTML = `
-                        <div class="job-title">${job.position || '미상'}</div>
+                        <div class="job-title">${jobTitle}</div>
                         <div class="job-meta">
                             <span>🏢 ${job.company_name || '미상'}</span>
                             <span>📍 ${job.location || '미상'}</span>
-                            <span>💼 ${job.job_category || '미상'}</span>
+                            <span>💼 ${job.job_specialty || '미상'}</span>
                             <span>👥 ${job.experience || '미상'}</span>
+                            ${job.deadline ? `<span>📅 ${job.deadline}</span>` : ''}
+                            ${job.is_always_recruiting ? '<span class="always-recruiting">🔄 상시채용</span>' : ''}
                         </div>
                         <div class="job-tags">${tags}</div>
                     `;
@@ -258,14 +333,20 @@
                 
                 // 더 불러오기 버튼
                 if (data.jobs.length === jobsPerPage) {
+                    const loadMoreContainer = document.createElement('div');
+                    loadMoreContainer.style.textAlign = 'right';
+                    loadMoreContainer.style.marginTop = '20px';
+                    
                     const loadMoreBtn = document.createElement('button');
                     loadMoreBtn.className = 'btn';
                     loadMoreBtn.textContent = '더 보기';
                     loadMoreBtn.onclick = () => {
-                        loadMoreBtn.remove();
+                        loadMoreContainer.remove();
                         loadJobs(false);
                     };
-                    container.appendChild(loadMoreBtn);
+                    
+                    loadMoreContainer.appendChild(loadMoreBtn);
+                    container.appendChild(loadMoreContainer);
                 }
                 
             } catch (error) {
@@ -312,15 +393,18 @@
         }
 
         async function loadDeadlineJobs() {
-            const jobCategory = document.getElementById('job-category-filter').value;
+            const jobSpecialty = document.getElementById('job-category-filter').value;
             const experience = document.getElementById('experience-filter').value;
             const location = document.getElementById('location-filter').value;
+            const excludeExpired = document.getElementById('exclude-expired-filter').checked;
             
             try {
                 const params = new URLSearchParams();
-                if (jobCategory) params.append('position', jobCategory);
+                if (jobSpecialty) params.append('job_specialty', jobSpecialty);
                 if (experience) params.append('experience', experience);
                 if (location) params.append('location', location);
+                // 마감된 공고 제외 옵션 (체크되어 있으면 include_expired=false)
+                params.append('include_expired', !excludeExpired);
                 
                 const response = await fetch(`/api/job_postings/deadline?${params}`);
                 const data = await response.json();
@@ -337,34 +421,57 @@
                     const jobCard = document.createElement('div');
                     jobCard.className = 'job-card';
                     
-                    // D-day 계산 (임시로 랜덤 값 사용)
-                    const daysLeft = Math.floor(Math.random() * 14) + 1;
-                    let deadlineClass = 'deadline-safe';
-                    let deadlineIcon = '🟢';
+                    // 제목 링크 처리
+                    const jobTitle = job.original_url ? 
+                        `<a href="${job.original_url}" target="_blank" rel="noopener noreferrer" class="job-title-link">${job.position || '미상'}</a>` :
+                        job.position || '미상';
                     
-                    if (daysLeft <= 3) {
-                        deadlineClass = 'deadline-urgent';
-                        deadlineIcon = '🔥';
-                    } else if (daysLeft <= 7) {
-                        deadlineClass = 'deadline-warning';
-                        deadlineIcon = '⚠️';
+                    // D-day 계산 (실제 날짜 기반)
+                    let deadlineInfo = '';
+                    if (job.is_always_recruiting) {
+                        deadlineInfo = '<span class="always-recruiting">🔄 상시채용</span>';
+                    } else if (job.deadline) {
+                        const today = new Date();
+                        const deadline = new Date(job.deadline);
+                        const diffTime = deadline - today;
+                        const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        let deadlineClass = 'deadline-safe';
+                        let deadlineIcon = '🟢';
+                        
+                        if (daysLeft < 0) {
+                            deadlineClass = 'deadline-expired';
+                            deadlineIcon = '❌';
+                            deadlineInfo = `<span class="${deadlineClass}">${deadlineIcon} 마감</span>`;
+                        } else if (daysLeft <= 3) {
+                            deadlineClass = 'deadline-urgent';
+                            deadlineIcon = '🔥';
+                            deadlineInfo = `<span class="${deadlineClass}">${deadlineIcon} D-${daysLeft}</span>`;
+                        } else if (daysLeft <= 7) {
+                            deadlineClass = 'deadline-warning';
+                            deadlineIcon = '⚠️';
+                            deadlineInfo = `<span class="${deadlineClass}">${deadlineIcon} D-${daysLeft}</span>`;
+                        } else {
+                            deadlineInfo = `<span class="${deadlineClass}">${deadlineIcon} D-${daysLeft}</span>`;
+                        }
                     }
                     
-                    // benefit을 tags로 표시 (실제로는 benefits 필드가 있어야 함)
-                    const benefits = job.benefits || job.tags || [];
-                    const benefitTags = Array.isArray(benefits) ? benefits : 
-                        (benefits ? [benefits] : ['유연근무', '성과급', '교육지원']);
+                    // 태그 처리
+                    const tags = job.tags ? 
+                        (Array.isArray(job.tags) ? job.tags : [job.tags])
+                            .map(tag => `<span class="tag">${tag}</span>`).join('') 
+                        : '';
                     
                     jobCard.innerHTML = `
-                        <div class="job-title">${job.position || '미상'}</div>
+                        <div class="job-title">${jobTitle}</div>
+                        <div class="job-specialty">🎯 ${job.job_specialty || '미분류'}</div>
                         <div class="job-meta">
                             <span>🏢 ${job.company_name || '미상'}</span>
                             <span>📍 ${job.location || '미상'}</span>
-                            <span class="${deadlineClass}">${deadlineIcon} D-${daysLeft}</span>
+                            <span>👥 ${job.experience || '미상'}</span>
+                            ${deadlineInfo}
                         </div>
-                        <div class="job-tags">
-                            ${benefitTags.map(benefit => `<span class="tag">${benefit}</span>`).join('')}
-                        </div>
+                        <div class="job-tags">${tags}</div>
                     `;
                     
                     container.appendChild(jobCard);
@@ -524,7 +631,317 @@
             }
         }
 
+        async function loadSpecialtyByLocationChart() {
+            try {
+                const response = await fetch('/api/statistics/specialty_by_location');
+                const data = await response.json();
 
+                const ctx = document.getElementById('specialtyByLocationChart').getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: data.datasets
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                stacked: true,
+                            },
+                            y: {
+                                stacked: true
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '지역별 상위 3개 직무 분포'
+                            },
+                            datalabels: {
+                                display: false // 데이터 레이블 숨기기
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Chart data loading error:', error);
+            }
+        }
+
+        async function loadExperienceBySpecialtyChart() {
+            try {
+                const response = await fetch('/api/statistics/experience_by_specialty');
+                const apiData = await response.json();
+
+                if (apiData.labels.length === 0) return;
+
+                // --- 데이터 재정렬 로직 시작 ---
+
+                // 1. 직무별로 데이터 묶기
+                const dataBySpecialty = {};
+                apiData.labels.forEach((specialty, i) => {
+                    dataBySpecialty[specialty] = [];
+                    apiData.datasets.forEach(dataset => {
+                        if (dataset.data[i] > 0) {
+                            dataBySpecialty[specialty].push({
+                                label: dataset.label,
+                                count: dataset.data[i],
+                                backgroundColor: dataset.backgroundColor
+                            });
+                        }
+                    });
+                });
+
+                // 2. 각 직무 내에서 경력 카운트 순으로 내림차순 정렬
+                for (const specialty in dataBySpecialty) {
+                    dataBySpecialty[specialty].sort((a, b) => b.count - a.count);
+                }
+
+                // 3. 정렬된 순서에 따라 새로운 데이터셋 생성
+                const maxSegments = Math.max(0, ...Object.values(dataBySpecialty).map(arr => arr.length));
+                const rankedDatasets = [];
+                for (let i = 0; i < maxSegments; i++) {
+                    const datasetData = [];
+                    const datasetColors = [];
+                    const datasetOriginalLabels = [];
+
+                    apiData.labels.forEach(specialty => {
+                        const sortedExperiences = dataBySpecialty[specialty];
+                        if (sortedExperiences[i]) {
+                            datasetData.push(sortedExperiences[i].count);
+                            datasetColors.push(sortedExperiences[i].backgroundColor);
+                            datasetOriginalLabels.push(sortedExperiences[i].label);
+                        } else {
+                            datasetData.push(0);
+                            datasetColors.push('rgba(0,0,0,0)');
+                            datasetOriginalLabels.push(null);
+                        }
+                    });
+
+                    rankedDatasets.push({
+                        data: datasetData,
+                        backgroundColor: datasetColors,
+                        originalLabels: datasetOriginalLabels // 툴팁과 레이블을 위한 원본 라벨 저장
+                    });
+                }
+
+                // 4. 퍼센트 계산
+                const totals = apiData.labels.map((_, i) => 
+                    rankedDatasets.reduce((sum, dataset) => sum + dataset.data[i], 0)
+                );
+
+                const percentageDatasets = rankedDatasets.map(dataset => ({
+                    ...dataset,
+                    data: dataset.data.map((d, i) => totals[i] === 0 ? 0 : (d / totals[i]) * 100)
+                }));
+
+                // --- 데이터 재정렬 로직 끝 ---
+
+                const ctx = document.getElementById('experienceBySpecialtyChart').getContext('2d');
+                
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: apiData.labels,
+                        datasets: percentageDatasets
+                    },
+                    options: {
+                        responsive: true,
+                        indexAxis: 'y',
+                        scales: {
+                            x: { stacked: true, display: false },
+                            y: { stacked: true }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '직무별 경력 분포 비율'
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    // API 원본 데이터를 사용하여 전체 범례 생성
+                                    generateLabels: function(chart) {
+                                        return apiData.datasets.map(dataset => ({
+                                            text: dataset.label,
+                                            fillStyle: dataset.backgroundColor,
+                                            strokeStyle: dataset.backgroundColor,
+                                            hidden: false
+                                        }));
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        return tooltipItems[0].label; // 직무명 표시
+                                    },
+                                    label: function(context) {
+                                        const datasetIndex = context.datasetIndex;
+                                        const dataIndex = context.dataIndex;
+                                        const originalLabel = context.dataset.originalLabels[dataIndex];
+                                        const value = context.parsed.x; // 퍼센트 값
+                                        
+                                        if (originalLabel && value > 0) {
+                                            return `${originalLabel}: ${value.toFixed(1)}%`;
+                                        }
+                                        return null; // 빈 데이터는 표시하지 않음
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                display: function(context) {
+                                    return context.dataset.data[context.dataIndex] > 5;
+                                },
+                                color: '#fff',
+                                font: { weight: 'bold' },
+                                formatter: (value) => value.toFixed(1) + '%'
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Experience by specialty chart loading error:', error);
+            }
+        }
+
+        let trendsChart = null;
+        async function loadPostingTrends() {
+            const jobSpecialty = document.getElementById('trend-job-category-filter').value;
+            const selectedYear = document.getElementById('trend-year-filter').value;
+            const params = new URLSearchParams();
+            if (jobSpecialty) {
+                params.append('job_specialty', jobSpecialty);
+            }
+            if (selectedYear) {
+                params.append('year', selectedYear);
+            }
+
+            try {
+                const response = await fetch(`/api/statistics/posting_trends?${params}`);
+                const data = await response.json();
+                
+                console.log('Posting trends data:', data);
+
+                const ctx = document.getElementById('postingTrendsChart').getContext('2d');
+                
+                if (trendsChart) {
+                    trendsChart.destroy(); // 이전 차트 파괴
+                }
+
+                // 데이터 변환: 날짜를 Date 객체로 변환
+                const chartData = {
+                    labels: data.labels.map(label => new Date(label)),
+                    datasets: data.datasets
+                };
+                
+                trendsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day',
+                                    displayFormats: {
+                                        day: 'M월 d일',
+                                        month: 'yyyy년 M월'
+                                    }
+                                },
+                                ticks: {
+                                    callback: function(value, index, ticks) {
+                                        const date = new Date(value);
+                                        const month = date.getMonth() + 1;
+                                        const day = date.getDate();
+                                        return `${month}월 ${day}일`;
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: '날짜'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: '공고 수'
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `${jobSpecialty || '전체'} 직무 채용 공고 추이${selectedYear ? ` (${selectedYear}년)` : ''}`
+                            },
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        const date = new Date(tooltipItems[0].parsed.x);
+                                        const year = date.getFullYear();
+                                        const month = date.getMonth() + 1;
+                                        const day = date.getDate();
+                                        return `${year}년 ${month}월 ${day}일`;
+                                    }
+                                }
+                            },
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x'
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: true,
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    drag: {
+                                        enabled: true,
+                                        mode: 'x',
+                                    },
+                                    mode: 'x',
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Posting trends chart loading error:', error);
+            }
+        }
+
+
+        async function loadAvailableYears() {
+            try {
+                const response = await fetch('/api/statistics/available_years');
+                const data = await response.json();
+                
+                const select = document.getElementById('trend-year-filter');
+                while (select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+                
+                data.years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year + '년';
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Available years loading error:', error);
+            }
+        }
+        
         // 페이지 로드 시 데이터 로딩
         window.addEventListener('load', async () => {
             connectWebSocket();
@@ -535,6 +952,10 @@
                 loadJobCategories(),
                 loadExperiences(),
                 loadLocations(),
+                loadAvailableYears(),
+                loadSpecialtyByLocationChart(),
+                loadExperienceBySpecialtyChart(),
+                loadPostingTrends(),
                 checkScrapingStatus()  // 현재 스크래핑 상태 확인
             ]);
         });

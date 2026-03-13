@@ -59,8 +59,11 @@ class PipelineConfig:
     bacth_size: int = 5
     request_timeout: int = 10
     enable_duplicate_check: bool = True
-    output_format: str = "json"  # json, csv, db
-    output_path: str = "output/"
+    # 저장 설정
+    save_to_database: bool = True
+    save_to_local: bool = False
+    local_output_format: str = "json"  # json, csv
+    local_output_path: str = "logs/"
 
 
 @dataclass

@@ -37,8 +37,8 @@ class Scraper(ABC):
         pass
     
     @abstractmethod
-    async def extract_job_posting_urls(self, page: Page) -> List[JobPostingData]:
-        """페이지에서 채용공고 URL 추출"""
+    async def extract_job_posting_data(self, page: Page) -> List[JobPostingData]:
+        """페이지에서 JobPostingData 객체 리스트 추출"""
         pass
     
     @abstractmethod
@@ -85,7 +85,7 @@ class WantedScraper(Scraper):
             },
             "default_params": {
                 "country": "kr",
-                "job_sort": "job.recommend_order",
+                "job_sort": "job.latest_order",
                 "years": -1,
                 "locations": "all",
             },
@@ -109,49 +109,61 @@ class WantedScraper(Scraper):
         
         return f"{base_url}?{query_string}"
     
-    async def extract_job_posting_urls(self, page: Page) -> List[JobPostingData]:
-        """Wanted 페이지에서 채용공고 URL 추출"""
-        job_posting_urls = []
+    async def extract_job_posting_data(self, page: Page) -> List[JobPostingData]:
+        """Wanted 페이지에서 JobPostingData 객체 리스트 추출"""
+        job_posting_data_list = []
         
         try:
-            job_postings = await page.query_selector_all(self.selectors["post_list"])
+            job_post_elements = await page.query_selector_all(self.selectors["post_list"])
             
-            for job_post in job_postings:
-                try:
-                    href_element = await job_post.query_selector(self.selectors["job_post_link"])
-                    if not href_element:
-                        continue
-                    
-                    # 속성들 추출 (Wanted 전용)
-                    href = await href_element.get_attribute("href")
-                    position = await href_element.get_attribute("data-position-name")
-                    posting_id = await href_element.get_attribute("data-position-id")
-                    company = await href_element.get_attribute("data-company-name")
-                    # company_id = await href_element.get_attribute("data-company-id")
-                    job_category = await href_element.get_attribute("data-job-category")
-                    
-                    # job_category_id = await href_element.get_attribute("data-job-category-id")
-                    
-                    if href and position and company:
-                        job_post = JobPostingData(
-                            full_url=self.base_url + href,
-                            position=position or "Unknown Position",
-                            company=company or "Unknown Company",
-                            # company_id=company_id or "",
-                            posting_id=posting_id or "",
-                            job_category=job_category or "",
-                            # job_category_id=job_category_id or ""
-                        )
-                        job_posting_urls.append(job_post)
+            for job_element in job_post_elements:
+                job_posting_data = await self._extract_single_job_posting_data(job_element)
+                if job_posting_data:
+                    job_posting_data_list.append(job_posting_data)
                         
-                except Exception as e:
-                    # 개별 job 처리 실패는 무시하고 계속
-                    continue
-                    
         except Exception as e:
-            raise Exception(f"Failed to extract job URLs from Wanted: {e}")
+            raise Exception(f"Failed to extract JobPostingData from Wanted: {e}")
         
-        return job_posting_urls
+        return job_posting_data_list
+    
+    async def _extract_single_job_posting_data(self, job_element) -> JobPostingData:
+        """단일 job 요소에서 JobPostingData 객체 생성"""
+        try:
+            href_element = await job_element.query_selector(self.selectors["job_post_link"])
+            if not href_element:
+                return None
+            
+            # URL 추출
+            href = await href_element.get_attribute("href")
+            if not href:
+                return None
+            
+            # 새로운 구조에서 텍스트로 직무명, 회사명 추출
+            position_element = await job_element.query_selector('[class*="position"]')
+            position = await position_element.text_content() if position_element else None
+            
+            company_element = await job_element.query_selector('[class*="company"]')
+            company = await company_element.text_content() if company_element else None
+            
+            # 필수 데이터 검증
+            if not all([href, position, company]):
+                return None
+            
+            # URL에서 posting_id 추출 (예: /wd/323478 → 323478)
+            posting_id = href.split('/')[-1] if href.startswith('/wd/') else ""
+            
+            # JobPostingData 객체 생성
+            return JobPostingData(
+                full_url=self.base_url + href,
+                position=position.strip(),
+                company=company.strip(),
+                posting_id=posting_id,
+                job_category="",  # 현재 구조에서는 직접 추출 어려움
+            )
+                        
+        except Exception as e:
+            # 개별 job 처리 실패 시 None 반환
+            return None
     
     async def scroll_page(self, page: Page, scroll_delay: int) -> bool:
         """Wanted 페이지 스크롤 (새로운 콘텐츠 로드 여부 반환)"""
@@ -201,7 +213,7 @@ class ScraperFactory:
         """사이트 이름으로 스크래퍼 생성"""
         adapter_class = cls._scrapers.get(site_name.lower())
         if not adapter_class:
-            raise ValueError(f"Unsupported site: {site_name}. Supported sites: {list(cls._adapters.keys())}")
+            raise ValueError(f"Unsupported site: {site_name}. Supported sites: {list(cls._scrapers.keys())}")
         return adapter_class()
     
     @classmethod

@@ -1,0 +1,10 @@
+{
+  "tests/url_test.py::TestURLValidation::test_can_parse_url_exception": true,
+  "tests/url_test.py::TestURLValidation::test_can_parse_url_fail": true,
+  "tests/url_test.py::TestURLValidation::test_can_parse_url_success": true,
+  "tests/url_test.py::TestURLValidation::test_is_https_url": true,
+  "tests/url_test.py::TestURLValidation::test_is_valid_protocol": true,
+  "tests/url_test.py::TestURLValidation::test_is_valid_url": true,
+  "tests/url_test.py::TestURLValidation::test_normalize_url": true,
+  "tests/url_test.py": true
+}
