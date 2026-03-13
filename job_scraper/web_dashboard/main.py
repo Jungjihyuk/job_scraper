@@ -27,7 +27,7 @@ class ConnectionManager:
             if connection.client_state == WebSocketState.CONNECTED:
                 try:
                     await connection.send_text(message)
-                except:
+                except Exception:
                     self.active_connections.remove(connection)
     
     def set_scraping_process(self, process):
@@ -42,7 +42,7 @@ class ConnectionManager:
                 self.current_process.terminate()
                 self.is_scraping = False
                 return True
-            except:
+            except Exception:
                 pass
         return False
 

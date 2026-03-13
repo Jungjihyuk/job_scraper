@@ -1,11 +1,14 @@
 """
 PostgreSQL 데이터베이스 설정
 """
+import logging
 import os
 from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseConfig:
@@ -16,7 +19,10 @@ class DatabaseConfig:
         self.port = int(os.getenv("DB_PORT", "5432"))
         self.database = os.getenv("DB_NAME", "db_name")
         self.username = os.getenv("DB_USER", "postgres")
-        self.password = os.getenv("DB_PASSWORD", "1234")
+        _password = os.getenv("DB_PASSWORD")
+        if _password is None:
+            logger.warning("DB_PASSWORD 환경변수가 설정되지 않았습니다. 기본값을 사용합니다.")
+        self.password = _password or "1234"
         self.ssl_mode = os.getenv("DB_SSL_MODE", "prefer")
         
         # 연결 풀 설정

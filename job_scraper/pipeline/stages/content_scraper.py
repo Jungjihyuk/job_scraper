@@ -125,20 +125,20 @@ class ContentScraperStage(AsyncBatchStage):
             if page:
                 try:
                     await page.close()
-                except:
+                except Exception:
                     pass
-            
+
             if browser:
                 try:
                     await browser.close()
-                except:
+                except Exception:
                     pass
-            
+
             # Playwright 정리
             if 'playwright' in locals():
                 try:
                     await playwright.stop()
-                except:
+                except Exception:
                     pass
     
     async def _scrape_job_details(self, page: Page) -> Dict[str, str]:
