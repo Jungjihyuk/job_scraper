@@ -59,7 +59,7 @@ async def main(opt):
         request_timeout=10,
         enable_duplicate_check=True,
         # 저장 설정
-        save_to_database=False,
+        save_to_database=True,
         save_to_local=True,  # 로컬 JSON 저장도 활성화
         local_output_format="json",
         local_output_path="logs/"

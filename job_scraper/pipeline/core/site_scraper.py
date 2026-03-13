@@ -85,7 +85,7 @@ class WantedScraper(Scraper):
             },
             "default_params": {
                 "country": "kr",
-                "job_sort": "job.recommend_order",
+                "job_sort": "job.latest_order",
                 "years": -1,
                 "locations": "all",
             },
@@ -133,24 +133,32 @@ class WantedScraper(Scraper):
             if not href_element:
                 return None
             
-            # Wanted 사이트의 data 속성들 추출
+            # URL 추출
             href = await href_element.get_attribute("href")
-            position = await href_element.get_attribute("data-position-name")
-            posting_id = await href_element.get_attribute("data-position-id")
-            company = await href_element.get_attribute("data-company-name")
-            job_category = await href_element.get_attribute("data-job-category")
+            if not href:
+                return None
+            
+            # 새로운 구조에서 텍스트로 직무명, 회사명 추출
+            position_element = await job_element.query_selector('[class*="position"]')
+            position = await position_element.text_content() if position_element else None
+            
+            company_element = await job_element.query_selector('[class*="company"]')
+            company = await company_element.text_content() if company_element else None
             
             # 필수 데이터 검증
             if not all([href, position, company]):
                 return None
             
+            # URL에서 posting_id 추출 (예: /wd/323478 → 323478)
+            posting_id = href.split('/')[-1] if href.startswith('/wd/') else ""
+            
             # JobPostingData 객체 생성
             return JobPostingData(
                 full_url=self.base_url + href,
-                position=position,
-                company=company,
-                posting_id=posting_id or "",
-                job_category=job_category or "",
+                position=position.strip(),
+                company=company.strip(),
+                posting_id=posting_id,
+                job_category="",  # 현재 구조에서는 직접 추출 어려움
             )
                         
         except Exception as e:
