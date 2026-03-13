@@ -198,7 +198,7 @@ class JobNormalizerStage(BaseStage):
         
         high_confidence_count = sum(
             1 for item in data 
-            if item.get('normalization', {}).get('confidence', 0) >= self.normalizer.confidence_threshold
+            if item.get('normalization', {}).get('confidence', 0) >= self.job_normalizer.confidence_threshold
         )
         
         low_confidence_count = len(data) - high_confidence_count

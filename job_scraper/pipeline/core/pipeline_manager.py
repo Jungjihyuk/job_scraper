@@ -23,8 +23,8 @@ class PipelineManager:
         
         # Stage들 초기화
         self.url_collector = URLCollectorStage()
-        self.url_validator = URLValidatorStage(batch_size=config.bacth_size)
-        self.content_scraper = ContentScraperStage(config=config, batch_size=config.bacth_size)  # 병렬 처리로 배치 크기 증가
+        self.url_validator = URLValidatorStage(batch_size=config.batch_size)
+        self.content_scraper = ContentScraperStage(config=config, batch_size=config.batch_size)  # 병렬 처리로 배치 크기 증가
         self.job_normalizer = JobNormalizerStage()
         self.database_saver = DatabaseSaverStage() if config.save_to_database else None
         self.local_file_saver = LocalFileSaverStage() if config.save_to_local else None

@@ -211,7 +211,7 @@ class ContentScraperStage(AsyncBatchStage):
         try: 
             await page.wait_for_selector(self.selectors.LOCATION, timeout=10000)
             
-            location_elem = await page.query_selector_all(self.selectors.EXPERIENCE)    
+            location_elem = await page.query_selector_all(self.selectors.LOCATION)    
             location = await location_elem[0].text_content() if location_elem else "No location"
             self.logger.debug(f"📍 location: {location}")
             return {"location": location}

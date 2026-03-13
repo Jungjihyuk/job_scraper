@@ -55,7 +55,7 @@ async def main(opt):
         scraper_type="wanted",
         max_scrolls=opt.max_scrolls,
         scroll_delay=opt.scroll_delay,
-        bacth_size=10,
+        batch_size=10,
         request_timeout=10,
         enable_duplicate_check=True,
         # 저장 설정
