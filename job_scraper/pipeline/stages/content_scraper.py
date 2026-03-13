@@ -25,12 +25,13 @@ class WantedSelectors:
 class ContentScraperStage(AsyncBatchStage):
     """컨텐츠 스크래핑 Stage - 상세 정보 수집"""
     
-    def __init__(self, config: PipelineConfig,  batch_size: int = 6):
+    def __init__(self, config: PipelineConfig, batch_size: int = 6, expand_wait: int = 7000):
         super().__init__("ContentScraper", batch_size=batch_size)
         self.delay_range = (1.0, 3.0)  # 요청 간격 증가 (초)
         self.playwright = None
         self.selectors = WantedSelectors()
-        self.config = config 
+        self.config = config
+        self.expand_wait = expand_wait
     
     async def process_single_item(self, validated_url: ValidatedURL) -> JobDetails:
         """단일 URL 상세 정보 스크래핑"""
@@ -179,7 +180,7 @@ class ContentScraperStage(AsyncBatchStage):
                 expand_button = page.locator(self.selectors.EXPAND_BUTTON)
                 if await expand_button.is_visible():
                     await expand_button.click()
-                    await page.wait_for_timeout(7000)  # 로딩 대기 (headless 모드 최적화)
+                    await page.wait_for_timeout(self.expand_wait)  # 로딩 대기 (headless 모드 최적화)
                     # 네트워크 유휴 상태 확인 (더 긴 대기)
                     await page.wait_for_load_state('networkidle', timeout=15000)
                     self.logger.debug("✅ '상세 정보 더 보기' 버튼 클릭 성공")
