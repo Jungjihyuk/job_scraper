@@ -15,8 +15,16 @@ import argparse
 import asyncio
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 from playwright.async_api import async_playwright
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from job_scraper.utils.stealth import (
+    MODERN_USER_AGENT,
+    STEALTH_LAUNCH_ARGS,
+    apply_stealth,
+)
 
 DETAIL_SELECTORS = {
     "CONTENT_WRAPPER": "section.JobContent_descriptionWrapper__RMlfm",
@@ -66,14 +74,14 @@ async def check_page_selectors(
     results: list[SelectorResult] = []
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            )
+        browser = await p.chromium.launch(
+            headless=True,
+            args=STEALTH_LAUNCH_ARGS,
         )
+        context = await browser.new_context(
+            user_agent=MODERN_USER_AGENT,
+        )
+        await apply_stealth(context)
         page = await context.new_page()
 
         try:
@@ -82,11 +90,14 @@ async def check_page_selectors(
                 status = response.status if response else "no response"
                 print(f"  page load failed ({status})")
                 return results
-
-            await page.wait_for_load_state("networkidle", timeout=15000)
         except Exception as e:
             print(f"  page load error: {e}")
             return results
+
+        try:
+            await page.wait_for_load_state("networkidle", timeout=15000)
+        except Exception:
+            pass
 
         print(f"\n{'=' * 60}")
         print(f"  {label}: {url}")

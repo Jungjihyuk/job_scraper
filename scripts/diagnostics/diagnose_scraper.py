@@ -21,6 +21,13 @@ from pathlib import Path
 
 from playwright.async_api import async_playwright
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from job_scraper.utils.stealth import (
+    MODERN_USER_AGENT,
+    STEALTH_LAUNCH_ARGS,
+    apply_stealth,
+)
+
 
 # ── 진단 대상 셀렉터 (content_scraper.py WantedSelectors 기준) ──
 WANTED_SELECTORS = {
@@ -44,15 +51,30 @@ LIST_SELECTORS = {
     "JOB_POST_LINK": 'div[data-cy="job-card"] a',
 }
 
-# anti-bot 서비스 헤더 키워드
-ANTI_BOT_HEADER_KEYWORDS = [
-    "cf-",
-    "datadome",
-    "perimeterx",
-    "x-bot",
+# Anti-bot header prefixes/names that indicate active bot protection.
+# Excludes normal CDN headers (x-amz-cf-*, cf-ray, cf-cache-status).
+ANTI_BOT_HEADER_EXACT = {
+    "cf-mitigated",
+}
+ANTI_BOT_HEADER_PREFIXES = [
+    "x-datadome",
     "x-px",
-    "akamai",
+    "x-dd-",
 ]
+ANTI_BOT_HEADER_CONTAINS = [
+    "x-akamai-bot-reason",
+    "x-akamai-bot-score",
+]
+
+
+def _is_anti_bot_header(name: str) -> bool:
+    lower = name.lower()
+    if lower in ANTI_BOT_HEADER_EXACT:
+        return True
+    if any(lower.startswith(p) for p in ANTI_BOT_HEADER_PREFIXES):
+        return True
+    return lower in ANTI_BOT_HEADER_CONTAINS
+
 
 DEFAULT_TEST_URL = "https://www.wanted.co.kr/wd/347915"
 SCREENSHOT_DIR = Path("logs/diagnostics")
@@ -102,27 +124,33 @@ class DiagnosticResult:
                 )
 
 
-async def diagnose(url: str, headed: bool = False):
-    """6단계 진단 실행"""
+async def diagnose(url: str, headed: bool = False, stealth: bool = False):
     result = DiagnosticResult()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
 
+    mode = "stealth" if stealth else "raw"
     print(f"🔍 스크래핑 진단 시작: {url}")
-    print(f"   모드: {'headed' if headed else 'headless'}")
+    print(f"   모드: {mode} / {'headed' if headed else 'headless'}")
     print(f"   시간: {timestamp}")
     print("-" * 60)
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=not headed)
-        context = await browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
+        if stealth:
+            browser = await p.chromium.launch(
+                headless=not headed,
+                args=STEALTH_LAUNCH_ARGS,
             )
-        )
+            context = await browser.new_context(
+                user_agent=MODERN_USER_AGENT,
+            )
+            await apply_stealth(context)
+        else:
+            browser = await p.chromium.launch(headless=not headed)
+            context = await browser.new_context(
+                user_agent=MODERN_USER_AGENT,
+            )
         page = await context.new_page()
 
         # ── Step 1: 페이지 로드 ──
@@ -273,13 +301,10 @@ async def diagnose(url: str, headed: bool = False):
             + (" (노출됨!)" if webdriver_val else " (정상)"),
         )
 
-        # anti-bot 응답 헤더
         if response:
             headers = response.headers
             detected_headers = {
-                k: v
-                for k, v in headers.items()
-                if any(kw in k.lower() for kw in ANTI_BOT_HEADER_KEYWORDS)
+                k: v for k, v in headers.items() if _is_anti_bot_header(k)
             }
             if detected_headers:
                 result.add(
@@ -312,9 +337,14 @@ def main():
         action="store_true",
         help="브라우저 창을 열어서 실행 (디버깅용)",
     )
+    parser.add_argument(
+        "--stealth",
+        action="store_true",
+        help="stealth.py 적용 상태로 진단 (수정 후 검증용)",
+    )
     args = parser.parse_args()
 
-    asyncio.run(diagnose(args.url, args.headed))
+    asyncio.run(diagnose(args.url, args.headed, args.stealth))
 
 
 if __name__ == "__main__":
