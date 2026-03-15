@@ -1,1 +1,3 @@
-export {};
+import { App } from './app'
+
+App()
