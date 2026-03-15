@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   postgres:
     image: postgres:18
@@ -10,14 +8,14 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER:-jihyeok}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-jh1234}
-      POSTGRES_DB: ${DB_NAME:-job_scraper}
+      POSTGRES_DB: ${DB_NAME:-job_scraper_db}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jihyeok}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-jihyeok} -d ${DB_NAME:-job_scraper_db}"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   backend:
     image: ghcr.io/astral-sh/uv:python3.10-bookworm
@@ -26,16 +24,20 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: "postgresql+psycopg2://${DB_USER:-jihyeok}:${DB_PASSWORD:-jh1234}@postgres:5432/${DB_NAME:-job_scraper}"
+      DB_HOST: postgres
+      DATABASE_URL: "postgresql+psycopg2://${DB_USER:-jihyeok}:${DB_PASSWORD:-jh1234}@postgres:5432/${DB_NAME:-job_scraper_db}"
     volumes:
       - ./job_scraper:/app/job_scraper
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock
+      - ./README.md:/app/README.md
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "8000:8000"
-    command: uv sync && uv run uvicorn job_scraper.web_dashboard.main:app --host 0.0.0.0 --port 8000 --reload
+    command: >
+      sh -c "uv sync && uv run uvicorn job_scraper.web_dashboard.main:app --host 0.0.0.0 --port 8000 --reload"
 
   frontend:
     image: node:22-bookworm
@@ -44,8 +46,10 @@ services:
     volumes:
       - ./frontend:/app
     environment:
+      CI: "true"
       VITE_API_PROXY_TARGET: http://backend:8000
-    command: sh -c "corepack enable && pnpm install --force && cd apps/web && pnpm dev --host 0.0.0.0 --port 5173"
+    command: >
+      sh -c "corepack enable && pnpm install --force && cd apps/web && pnpm dev --host 0.0.0.0 --port 5173"
     ports:
       - "5173:5173"
 
