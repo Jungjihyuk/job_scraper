@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: job_scraper_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-jihyeok}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-jh1234}
+      POSTGRES_DB: ${DB_NAME:-job_scraper}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jihyeok}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ghcr.io/astral-sh/uv:python3.10-bookworm
+    container_name: job_scraper_backend
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "postgresql+psycopg2://${DB_USER:-jihyeok}:${DB_PASSWORD:-jh1234}@postgres:5432/${DB_NAME:-job_scraper}"
+    volumes:
+      - ./job_scraper:/app/job_scraper
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./uv.lock:/app/uv.lock
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    command: uv sync && uv run uvicorn job_scraper.web_dashboard.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    image: node:22-bookworm
+    container_name: job_scraper_frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
+    command: sh -c "corepack enable && pnpm install --force && cd apps/web && pnpm dev --host 0.0.0.0 --port 5173"
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres-data:
