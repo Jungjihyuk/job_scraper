@@ -40,7 +40,7 @@ async def run_pipeline(scraper_type: str, job: str):
     """실제 파이프라인 실행 함수"""
     try:
         # WebSocket 매니저 import
-        from backend.api.websocket import manager
+        from backend.ws.manager import manager
 
         # 시작 메시지
         await manager.send_message(
@@ -148,7 +148,7 @@ async def run_pipeline(scraper_type: str, job: str):
             )
 
     except Exception as e:
-        from backend.api.websocket import manager
+        from backend.ws.manager import manager
 
         await manager.send_message(
             json.dumps({"type": "error", "message": f"파이프라인 실행 에러: {e}"})
@@ -159,7 +159,7 @@ async def run_pipeline(scraper_type: str, job: str):
 async def stop_scraping():
     """스크래핑 중지"""
     try:
-        from backend.api.websocket import manager
+        from backend.ws.manager import manager
 
         if manager.stop_scraping():
             await manager.send_message(
@@ -179,7 +179,7 @@ async def stop_scraping():
 async def get_scraping_status() -> ScrapingStatusResponse:
     """스크래핑 상태 조회"""
     try:
-        from backend.api.websocket import manager
+        from backend.ws.manager import manager
 
         return ScrapingStatusResponse(
             is_scraping=manager.is_scraping,

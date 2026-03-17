@@ -7,7 +7,7 @@ import os
 import subprocess
 
 from backend.core.database import init_database
-from backend.api.websocket import ConnectionManager, manager
+from backend.ws.manager import ConnectionManager, manager
 from backend.api.routes import (
     dashboard,
     job_postings,
