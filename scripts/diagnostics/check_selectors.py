@@ -20,7 +20,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from job_scraper.utils.stealth import (
+from backend.utils.stealth import (
     MODERN_USER_AGENT,
     STEALTH_LAUNCH_ARGS,
     apply_stealth,
