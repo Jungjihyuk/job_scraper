@@ -56,7 +56,7 @@ class PipelineConfig:
     scraper_type: str = "wanted"
     max_scrolls: int = 50
     scroll_delay: int = 2000
-    bacth_size: int = 5
+    batch_size: int = 5
     request_timeout: int = 10
     enable_duplicate_check: bool = True
     # 저장 설정

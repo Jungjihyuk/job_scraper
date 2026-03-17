@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.websockets import WebSocketState
 import os
+import subprocess
 
 from job_scraper.database.connection import init_database
 from job_scraper.web_dashboard.api.v1 import dashboard, job_postings, scraping, statistic, companies
@@ -27,7 +28,7 @@ class ConnectionManager:
             if connection.client_state == WebSocketState.CONNECTED:
                 try:
                     await connection.send_text(message)
-                except:
+                except Exception:
                     self.active_connections.remove(connection)
     
     def set_scraping_process(self, process):
@@ -35,14 +36,19 @@ class ConnectionManager:
         self.current_process = process
         self.is_scraping = True
     
-    def stop_scraping(self):
+    def stop_scraping(self, timeout: int = 5):
         """스크래핑 중지"""
         if self.current_process and self.is_scraping:
             try:
                 self.current_process.terminate()
+                self.current_process.wait(timeout=timeout)
                 self.is_scraping = False
                 return True
-            except:
+            except subprocess.TimeoutExpired:
+                self.current_process.kill()
+                self.is_scraping = False
+                return True
+            except Exception:
                 pass
         return False
 

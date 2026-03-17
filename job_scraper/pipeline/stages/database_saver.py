@@ -38,7 +38,7 @@ class DatabaseSaverStage(BaseStage):
         
         # 데이터 타입 확인
     
-        if isinstance(data[0], ValidatedURL):
+        if isinstance(data[0], ValidatedURL): 
             return await self._save_validated_urls(data)
         elif isinstance(data[0], JobDetails):
             return await self._save_job_details(data)
@@ -263,8 +263,8 @@ class DatabaseSaverStage(BaseStage):
                         ).first()
                         
                         if existing_job:
-                            self.logger.debug(f"⚠️ Job posting already exists: {job_details.job_url.posting_id}")
-                            self.update_metrics(failed=1)
+                            self.logger.info(f"⏭️ Skipped duplicate job posting: {job_details.job_url.posting_id}")
+                            self.update_metrics(processed=1)
                             continue
                         
                         # 회사 정보 저장 또는 조회
