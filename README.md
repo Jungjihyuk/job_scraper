@@ -65,40 +65,49 @@
 
 ```
 job_scraper/
-├── job_scraper/
-│   ├── config/                 # 설정 파일들
-│   │   ├── logging_config.py   # 로깅 설정
-│   │   └── settings.py         # 애플리케이션 설정
-│   ├── database/               # 데이터베이스 레이어
-│   │   ├── models.py           # SQLAlchemy 모델
-│   │   ├── connection.py       # DB 연결 관리
-│   │   └── config.py           # DB 설정
-│   ├── pipeline/               # 데이터 수집 파이프라인
-│   │   ├── core/               # 핵심 파이프라인 컴포넌트
-│   │   │   ├── base_stage.py   # 파이프라인 스테이지 베이스 클래스
-│   │   │   ├── pipeline_manager.py  # 파이프라인 매니저
-│   │   │   └── data_models.py  # 데이터 모델
-│   │   └── stages/             # 파이프라인 스테이지들
-│   │       ├── url_collector.py    # URL 수집기
-│   │       ├── url_validator.py    # URL 검증기
-│   │       ├── content_scraper.py  # 사이트 콘텐츠 스크래핑
-│   │       └── database_saver.py   # DB 저장
-│   ├── scrapers/               # 스크래핑 엔진
-│   │   ├── wanted_scraper.py   # 원티드 스크래퍼
-│   │   └── scraper_manager.py  # 스크래퍼 매니저
-│   ├── web_dashboard/          # 웹 대시보드
-│   │   ├── api/v1/            # API 인터페이스
-│   │   ├── schemas/           # Pydantic 스키마
-│   │   ├── templates/         # HTML 템플릿
-│   │   └── static/           # 정적 파일
-│   ├── utils/                 # 유틸리티
-│   ├── main_pipeline.py       # 파이프라인 실행
-│   └── main.py               # cli 스크래핑 실행
-├── tests/                    # 테스트 파일
-├── notebooks/               # Jupyter 노트북
-├── logs/                   # 로그 파일
-├── uv.lock                # 의존성 잠금 파일
-└── pyproject.toml         # 프로젝트 설정 파일 
+├── backend/                      # 백엔드 Python 패키지
+│   ├── main.py                   # FastAPI 앱 엔트리포인트
+│   ├── cli.py                    # CLI 파이프라인 실행
+│   ├── core/                     # 공유 인프라
+│   │   ├── config.py             # 앱 + DB 설정
+│   │   ├── logging.py            # 로깅 설정
+│   │   └── database.py           # DB 연결 관리
+│   ├── models/                   # SQLAlchemy ORM 모델
+│   │   ├── scraping.py           # 스크래핑 배치/태스크/URL
+│   │   └── job.py                # 채용공고/회사/직무/경력
+│   ├── api/                      # HTTP API 레이어
+│   │   ├── websocket.py          # WebSocket 연결 관리
+│   │   └── routes/               # API 엔드포인트
+│   │       ├── dashboard.py
+│   │       ├── job_postings.py
+│   │       ├── scraping.py
+│   │       ├── statistics.py
+│   │       └── companies.py
+│   ├── schemas/                  # Pydantic 스키마
+│   ├── pipeline/                 # 스크래핑 파이프라인
+│   │   ├── manager.py            # 파이프라인 오케스트레이터
+│   │   ├── data_models.py        # 파이프라인 데이터클래스
+│   │   ├── stages/               # 파이프라인 스테이지
+│   │   │   ├── base.py
+│   │   │   ├── url_collector.py
+│   │   │   ├── url_validator.py
+│   │   │   ├── content_scraper.py
+│   │   │   ├── normalizer.py
+│   │   │   ├── database_saver.py
+│   │   │   └── file_saver.py
+│   │   ├── scrapers/             # 사이트별 크롤러
+│   │   │   ├── base.py
+│   │   │   ├── manager.py
+│   │   │   └── wanted.py
+│   │   └── normalizers/          # 데이터 정규화
+│   │       ├── job.py
+│   │       └── experience.py
+│   └── utils/                    # 순수 유틸리티
+├── frontend/                     # React 프론트엔드
+├── tests/                        # 테스트
+├── scripts/                      # 운영/마이그레이션 스크립트
+├── docker-compose.yml
+└── pyproject.toml
 ```
 
 ## <div align="center">설치 및 설정</div>
@@ -144,7 +153,7 @@ DB_SSL_MODE=prefer
 ### 1. 웹 대시보드 실행
 
 ```bash
-uv run uvicorn job_scraper.web_dashboard.main:app --reload
+uv run uvicorn backend.main:app --reload
 ```
 
 브라우저에서 `http://localhost:8000`에 접속하여 대시보드를 사용할 수 있습니다.
@@ -152,7 +161,7 @@ uv run uvicorn job_scraper.web_dashboard.main:app --reload
 ### 2. 커맨드라인 파이프라인 실행
 
 ```bash
-uv run job_scraper/main_pipeline.py 
+uv run backend/cli.py 
 ```
 
 웹사이트별 설정에 따라 회사별 채용 공고 스크래핑이 시작됩니다.
@@ -194,13 +203,13 @@ pytest tests/
 
 ```bash
 # 코드 포맷팅
-black job_scraper/
+black backend/
 
 # import 정렬
-isort job_scraper/
+isort backend/
 
 # 코드 품질 검사
-flake8 job_scraper/
+flake8 backend/
 ```
 
 

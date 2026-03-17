@@ -27,7 +27,7 @@ services:
       DB_HOST: postgres
       DATABASE_URL: "postgresql+psycopg2://${DB_USER:-jihyeok}:${DB_PASSWORD:-jh1234}@postgres:5432/${DB_NAME:-job_scraper_db}"
     volumes:
-      - ./job_scraper:/app/job_scraper
+      - ./backend:/app/backend
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock
       - ./README.md:/app/README.md
@@ -37,7 +37,7 @@ services:
     ports:
       - "8000:8000"
     command: >
-      sh -c "uv sync && uv run uvicorn job_scraper.web_dashboard.main:app --host 0.0.0.0 --port 8000 --reload"
+      sh -c "uv sync && uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
 
   frontend:
     image: node:22-bookworm
