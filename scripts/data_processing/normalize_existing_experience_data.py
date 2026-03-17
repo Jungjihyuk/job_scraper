@@ -10,10 +10,10 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-from job_scraper.database.connection import db_manager, init_database
-from job_scraper.database.models import JobPosting, ExperienceCategory
-from job_scraper.utils.experience_normalizer import ExperienceNormalizer
-from job_scraper.config.logging_config import create_development_logger
+from backend.core.database import db_manager, init_database
+from backend.models import JobPosting, ExperienceCategory
+from backend.pipeline.normalizers.experience import ExperienceNormalizer
+from backend.core.logging import create_development_logger
 from sqlalchemy.orm import sessionmaker
 
 logger = create_development_logger(__name__)
