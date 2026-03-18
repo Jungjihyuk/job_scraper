@@ -12,7 +12,9 @@ from backend.schemas.job_postings import (
     JobCategoriesResponse,
     ExperiencesResponse,
     LocationsResponse,
-    JobFilterRequest
+    DomainsResponse,
+    TechnologiesResponse,
+    JobFilterRequest,
 )
 
 router = APIRouter(prefix='/api/job_postings', tags=['job_postings'])
@@ -22,27 +24,36 @@ async def get_job_postings(
     job_specialty: str = None,
     experience: str = None,
     location: str = None,
+    domain: str = None,
+    technology: str = None,
     include_always_recruiting: bool = True,
     include_expired: bool = False,
-    limit: int = 10,  
+    limit: int = 10,
     db: Session = Depends(get_db_session)
-) -> JobListResponse: 
+) -> JobListResponse:
     """마감일 임박 채용 공고 가져오기 (마감된 공고 제외 가능)"""
-    try: 
-        
+    try:
+
         # JOIN 테이블 생성 (ExperienceCategory 포함)
         query = db.query(JobPosting).join(JobCategory)\
                                     .join(Company)\
                                     .join(Location)\
                                     .outerjoin(ExperienceCategory)
-        
+
         # 조건 검색을 위한 필터
         if job_specialty:
-            query = query.filter(JobCategory.job_specialty == job_specialty)    
-        if experience: 
+            query = query.filter(JobCategory.job_specialty == job_specialty)
+        if experience:
             query = query.filter(ExperienceCategory.standardized_experience == experience)
-        if location: 
+        if location:
             query = query.filter(Location.location == location)
+        if domain:
+            query = query.filter(JobPosting.domain == domain)
+        if technology:
+            from sqlalchemy import text
+            query = query.filter(
+                JobPosting.core_technologies.op('?')(technology)
+            )
         
         # 상시채용 포함 여부 필터링
         if not include_always_recruiting:
@@ -72,35 +83,45 @@ async def get_job_postings(
                 "deadline": job_posting.deadline.isoformat() if job_posting.deadline else None,
                 "is_always_recruiting": job_posting.is_always_recruiting,
                 "original_url": job_posting.original_url,
-                "tags": job_posting.tags
+                "tags": job_posting.tags,
+                "domain": job_posting.domain,
+                "core_technologies": job_posting.core_technologies,
             }
             for job_posting in job_postings
         ]
-        
+
         return JobListResponse(jobs=jobs)
-    
-    except Exception as e: 
+
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get('/recent', response_model=JobListResponse)
 async def get_recent_job_postings(
     limit: int = 10,
     exclude_always_recruiting: bool = False,
+    domain: str = None,
+    technology: str = None,
     db: Session = Depends(get_db_session)
 ) -> JobListResponse:
     """최근 등록된 채용 공고 가져오기"""
     try:
         from sqlalchemy import desc
-        
+
         query = db.query(JobPosting).join(JobCategory)\
                                     .join(Company)\
                                     .join(Location)\
                                     .outerjoin(ExperienceCategory)
-        
+
         # 상시채용 제외 필터링
         if exclude_always_recruiting:
             query = query.filter(JobPosting.is_always_recruiting == False)
-        
+        if domain:
+            query = query.filter(JobPosting.domain == domain)
+        if technology:
+            query = query.filter(
+                JobPosting.core_technologies.op('?')(technology)
+            )
+
         job_postings = query.order_by(desc(JobPosting.posted_date)).limit(limit).all()
 
         jobs = [
@@ -114,13 +135,15 @@ async def get_recent_job_postings(
                 "is_always_recruiting": job_posting.is_always_recruiting,
                 "original_url": job_posting.original_url,
                 "tags": job_posting.tags,
-                "posted_date": job_posting.posted_date.isoformat() if job_posting.posted_date else None
+                "posted_date": job_posting.posted_date.isoformat() if job_posting.posted_date else None,
+                "domain": job_posting.domain,
+                "core_technologies": job_posting.core_technologies,
             }
             for job_posting in job_postings
         ]
-        
+
         return JobListResponse(jobs=jobs)
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -160,15 +183,50 @@ async def get_experience(db: Session = Depends(get_db_session)) -> ExperiencesRe
 @router.get('/location', response_model=LocationsResponse)
 async def get_location(db: Session = Depends(get_db_session)) -> LocationsResponse:
     """모든 위치 조회"""
-    
-    try: 
+
+    try:
         locations = db.query(Location.location)\
                            .distinct()\
                            .filter(Location.location.is_not(None))\
                            .all()
-        
+
         location_list = [location[0] for location in locations]
         return LocationsResponse(locations=location_list)
-        
-    except Exception as e: 
-        raise HTTPException(status_code=500, detail=str(e)) 
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get('/domain', response_model=DomainsResponse)
+async def get_domains(db: Session = Depends(get_db_session)) -> DomainsResponse:
+    """모든 도메인 목록 조회"""
+    try:
+        domains = db.query(JobPosting.domain)\
+                    .distinct()\
+                    .filter(JobPosting.domain.is_not(None))\
+                    .order_by(JobPosting.domain)\
+                    .all()
+
+        domain_list = [d[0] for d in domains]
+        return DomainsResponse(domains=domain_list)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get('/technology', response_model=TechnologiesResponse)
+async def get_technologies(db: Session = Depends(get_db_session)) -> TechnologiesResponse:
+    """모든 핵심 기술 목록 조회"""
+    try:
+        from sqlalchemy import text as sa_text
+
+        results = db.execute(sa_text("""
+            SELECT DISTINCT tech.value #>> '{}' AS technology
+            FROM job_posting jp,
+                 jsonb_array_elements(jp.core_technologies) AS tech(value)
+            WHERE jp.core_technologies IS NOT NULL
+            ORDER BY technology
+        """)).fetchall()
+
+        return TechnologiesResponse(technologies=[r.technology for r in results])
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
