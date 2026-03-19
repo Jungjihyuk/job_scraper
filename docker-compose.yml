@@ -4,7 +4,7 @@ services:
     container_name: job_scraper_postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: ${DB_USER:-jihyeok}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-jh1234}
