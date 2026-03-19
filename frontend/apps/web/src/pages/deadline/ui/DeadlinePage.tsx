@@ -8,18 +8,22 @@ export function DeadlinePage() {
     job_specialty: '',
     experience: '',
     location: '',
+    domain: '',
+    technology: '',
     include_expired: false,
   })
   const [appliedFilters, setAppliedFilters] = useState<DeadlineFilter>({})
 
   const { jobs, loading, error } = useDeadlineJobs(appliedFilters)
-  const { categories, experiences, locations, loading: optionsLoading } = useFilterOptions()
+  const { categories, experiences, locations, domains, technologies, loading: optionsLoading } = useFilterOptions()
 
   const applyFilters = () => {
     setAppliedFilters({
       job_specialty: pendingFilters.job_specialty || undefined,
       experience: pendingFilters.experience || undefined,
       location: pendingFilters.location || undefined,
+      domain: pendingFilters.domain || undefined,
+      technology: pendingFilters.technology || undefined,
       include_expired: pendingFilters.include_expired,
     })
   }
@@ -69,6 +73,34 @@ export function DeadlinePage() {
               <option value=''>전체</option>
               {locations.map((loc) => (
                 <option key={loc} value={loc}>{loc}</option>
+              ))}
+            </select>
+          </div>
+          <div className='flex items-center gap-2'>
+            <label className='text-sm font-medium text-slate-600'>도메인</label>
+            <select
+              value={pendingFilters.domain ?? ''}
+              onChange={(e) => setPendingFilters((prev) => ({ ...prev, domain: e.target.value }))}
+              disabled={optionsLoading}
+              className='rounded border border-slate-300 px-2 py-1 text-sm focus:border-blue-400 focus:outline-none'
+            >
+              <option value=''>전체</option>
+              {domains.map((dom) => (
+                <option key={dom} value={dom}>{dom}</option>
+              ))}
+            </select>
+          </div>
+          <div className='flex items-center gap-2'>
+            <label className='text-sm font-medium text-slate-600'>기술</label>
+            <select
+              value={pendingFilters.technology ?? ''}
+              onChange={(e) => setPendingFilters((prev) => ({ ...prev, technology: e.target.value }))}
+              disabled={optionsLoading}
+              className='rounded border border-slate-300 px-2 py-1 text-sm focus:border-blue-400 focus:outline-none'
+            >
+              <option value=''>전체</option>
+              {technologies.map((tech) => (
+                <option key={tech} value={tech}>{tech}</option>
               ))}
             </select>
           </div>

@@ -18,4 +18,7 @@ export type {
   ChartDataset,
   ChartResponse,
   AvailableYearsResponse,
+  DomainsResponse,
+  TechnologiesResponse,
+  AvailableTechnologiesResponse,
 } from './types'

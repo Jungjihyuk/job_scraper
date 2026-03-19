@@ -29,6 +29,8 @@ export type JobPosting = {
   original_url: string | null
   tags: string[] | null
   posted_date?: string | null
+  domain?: string | null
+  core_technologies?: string[] | null
 }
 
 export type JobListResponse = { jobs: JobPosting[] }
@@ -48,3 +50,6 @@ export type ChartDataset = {
 
 export type ChartResponse = { labels: string[]; datasets: ChartDataset[] }
 export type AvailableYearsResponse = { years: number[] }
+export type DomainsResponse = { domains: string[] }
+export type TechnologiesResponse = { technologies: string[] }
+export type AvailableTechnologiesResponse = { technologies: string[] }

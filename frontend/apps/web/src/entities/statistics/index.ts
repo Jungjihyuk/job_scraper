@@ -2,12 +2,17 @@ export {
   useSpecialtyByLocation,
   useExperienceBySpecialty,
   usePostingTrends,
+  useDomainDistribution,
+  useTechnologyTrends,
 } from './model/useStatistics'
 export {
   fetchSpecialtyByLocation,
   fetchExperienceBySpecialty,
   fetchPostingTrends,
   fetchAvailableYears,
+  fetchDomainDistribution,
+  fetchTechnologyTrends,
+  fetchAvailableTechnologies,
 } from './api/statisticsApi'
 export {
   transformStackedBar,

@@ -1,5 +1,5 @@
 import { getJson } from '../../../shared/api'
-import type { ChartResponse, AvailableYearsResponse } from '../../../shared/api'
+import type { ChartResponse, AvailableYearsResponse, AvailableTechnologiesResponse } from '../../../shared/api'
 
 export async function fetchSpecialtyByLocation(): Promise<ChartResponse> {
   return getJson<ChartResponse>('/api/statistics/specialty_by_location')
@@ -21,4 +21,22 @@ export async function fetchPostingTrends(params?: {
 
 export async function fetchAvailableYears(): Promise<AvailableYearsResponse> {
   return getJson<AvailableYearsResponse>('/api/statistics/available_years')
+}
+
+export async function fetchDomainDistribution(): Promise<ChartResponse> {
+  return getJson<ChartResponse>('/api/statistics/domain_distribution')
+}
+
+export async function fetchTechnologyTrends(params?: {
+  technology?: string
+  year?: number
+}): Promise<ChartResponse> {
+  return getJson<ChartResponse>('/api/statistics/technology_trends', {
+    technology: params?.technology,
+    year: params?.year,
+  })
+}
+
+export async function fetchAvailableTechnologies(): Promise<AvailableTechnologiesResponse> {
+  return getJson<AvailableTechnologiesResponse>('/api/statistics/available_technologies')
 }

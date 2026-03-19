@@ -1,5 +1,5 @@
 import { getJson } from '../../../shared/api'
-import type { JobListResponse, JobCategoriesResponse, ExperiencesResponse, LocationsResponse } from '../../../shared/api'
+import type { JobListResponse, JobCategoriesResponse, ExperiencesResponse, LocationsResponse, DomainsResponse, TechnologiesResponse } from '../../../shared/api'
 import type { DeadlineFilter } from '../model/types'
 
 export async function fetchDeadlineJobs(filters?: DeadlineFilter): Promise<JobListResponse> {
@@ -7,6 +7,8 @@ export async function fetchDeadlineJobs(filters?: DeadlineFilter): Promise<JobLi
     job_specialty: filters?.job_specialty,
     experience: filters?.experience,
     location: filters?.location,
+    domain: filters?.domain,
+    technology: filters?.technology,
     include_expired: filters?.include_expired,
   })
 }
@@ -27,4 +29,12 @@ export async function fetchExperiences(): Promise<ExperiencesResponse> {
 
 export async function fetchLocations(): Promise<LocationsResponse> {
   return getJson<LocationsResponse>('/api/job_postings/location')
+}
+
+export async function fetchDomains(): Promise<DomainsResponse> {
+  return getJson<DomainsResponse>('/api/job_postings/domain')
+}
+
+export async function fetchTechnologies(): Promise<TechnologiesResponse> {
+  return getJson<TechnologiesResponse>('/api/job_postings/technology')
 }

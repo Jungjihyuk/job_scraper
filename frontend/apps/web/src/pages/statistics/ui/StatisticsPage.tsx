@@ -15,6 +15,8 @@ import {
   useSpecialtyByLocation,
   useExperienceBySpecialty,
   usePostingTrends,
+  useDomainDistribution,
+  useTechnologyTrends,
 } from '../../../entities/statistics'
 import type { StackedBarData } from '../../../entities/statistics'
 import { useFilterOptions } from '../../../entities/job-posting'
@@ -42,6 +44,19 @@ export function StatisticsPage() {
     error: e3,
   } = usePostingTrends(selectedSpecialty || undefined, selectedYear)
   const { categories } = useFilterOptions()
+
+  // Domain distribution
+  const { data: domainData, loading: l4, error: e4 } = useDomainDistribution()
+
+  // Technology trends
+  const [selectedTech, setSelectedTech] = useState<string>('')
+  const [selectedTechYear, setSelectedTechYear] = useState<number | undefined>()
+  const {
+    data: techTrendData,
+    technologies: availableTechs,
+    loading: l5,
+    error: e5,
+  } = useTechnologyTrends(selectedTech || undefined, selectedTechYear)
 
   return (
     <div className='space-y-10'>
@@ -126,6 +141,78 @@ export function StatisticsPage() {
               <YAxis />
               <Tooltip />
               <Line type='monotone' dataKey='count' stroke='#6366f1' dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </section>
+
+      <hr className='border-slate-200' />
+
+      <section>
+        <h2 className='mb-4 text-xl font-bold text-slate-800'>🏷️ 도메인 분포</h2>
+        {l4 && <LoadingSpinner />}
+        {e4 && <ErrorMessage message={e4} />}
+        {!l4 && !e4 && domainData.length === 0 && <EmptyState message='도메인 데이터가 없습니다.' />}
+        {!l4 && !e4 && domainData.length > 0 && (
+          <ResponsiveContainer width='100%' height={350}>
+            <BarChart data={domainData}>
+              <CartesianGrid strokeDasharray='3 3' />
+              <XAxis dataKey='name' />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              {getBarKeys(domainData).map((key, i) => (
+                <Bar key={key} dataKey={key} fill={COLORS[i % COLORS.length]} />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </section>
+
+      <hr className='border-slate-200' />
+
+      <section>
+        <h2 className='mb-4 text-xl font-bold text-slate-800'>🔧 기술 트렌드</h2>
+        <div className='mb-4 flex flex-wrap gap-3'>
+          <select
+            value={selectedTechYear ?? ''}
+            onChange={(e) => setSelectedTechYear(e.target.value ? Number(e.target.value) : undefined)}
+            className='rounded border border-slate-300 px-2 py-1 text-sm focus:border-blue-400 focus:outline-none'
+          >
+            <option value=''>전체 연도</option>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}년</option>
+            ))}
+          </select>
+          <select
+            value={selectedTech}
+            onChange={(e) => setSelectedTech(e.target.value)}
+            className='rounded border border-slate-300 px-2 py-1 text-sm focus:border-blue-400 focus:outline-none'
+          >
+            <option value=''>전체 기술</option>
+            {availableTechs.map((tech) => (
+              <option key={tech} value={tech}>{tech}</option>
+            ))}
+          </select>
+        </div>
+        {l5 && <LoadingSpinner />}
+        {e5 && <ErrorMessage message={e5} />}
+        {!l5 && !e5 && techTrendData.length === 0 && <EmptyState message='기술 트렌드 데이터가 없습니다.' />}
+        {!l5 && !e5 && techTrendData.length > 0 && (
+          <ResponsiveContainer width='100%' height={350}>
+            <LineChart data={techTrendData}>
+              <CartesianGrid strokeDasharray='3 3' />
+              <XAxis dataKey='date' />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              {selectedTech ? (
+                <Line type='monotone' dataKey='count' stroke='#6366f1' dot={false} />
+              ) : (
+                availableTechs.slice(0, 10).map((tech, i) => (
+                  <Line key={tech} type='monotone' dataKey={tech} stroke={COLORS[i % COLORS.length]} dot={false} />
+                ))
+              )}
             </LineChart>
           </ResponsiveContainer>
         )}
