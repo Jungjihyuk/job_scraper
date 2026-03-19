@@ -364,6 +364,8 @@ class DatabaseSaverStage(BaseStage):
                             tags=job_details.job_description.get("tags", {}),
                             deadline=deadline_date,
                             is_always_recruiting=is_always_recruiting,
+                            domain=job_details.job_description.get("domain"),
+                            core_technologies=job_details.job_description.get("core_technologies"),
                             posted_date=job_details.posted_date,
                         )
 

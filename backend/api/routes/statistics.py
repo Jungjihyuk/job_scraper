@@ -8,6 +8,7 @@ import random
 
 from backend.core.database import get_db_session
 from backend.models import JobPosting, JobCategory, Location, ExperienceCategory
+from sqlalchemy.dialects.postgresql import JSONB
 
 router = APIRouter(prefix='/api/statistics', tags=['statistics'])
 
@@ -190,5 +191,146 @@ async def get_available_years(db: Session = Depends(get_db_session)):
             .all()
         )
         return {"years": [y.year for y in years]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/domain_distribution")
+async def get_domain_distribution(db: Session = Depends(get_db_session)):
+    """
+    도메인별 채용공고 수 분포를 반환합니다.
+    """
+    try:
+        results = (
+            db.query(
+                JobPosting.domain,
+                func.count(JobPosting.id).label("job_count"),
+            )
+            .filter(JobPosting.domain.is_not(None))
+            .group_by(JobPosting.domain)
+            .order_by(func.count(JobPosting.id).desc())
+            .all()
+        )
+
+        if not results:
+            return {"labels": [], "datasets": []}
+
+        labels = [r.domain for r in results]
+        data = [r.job_count for r in results]
+
+        dataset = {
+            "label": "공고 수",
+            "data": data,
+            "backgroundColor": [
+                f"rgba({(i * 47 + 100) % 256}, {(i * 83 + 50) % 256}, {(i * 131 + 150) % 256}, 0.7)"
+                for i in range(len(labels))
+            ],
+        }
+
+        return {"labels": labels, "datasets": [dataset]}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/technology_trends")
+async def get_technology_trends(
+    technology: str = None,
+    year: int = None,
+    db: Session = Depends(get_db_session),
+):
+    """
+    기술별 월간 트렌드를 반환합니다. JSONB unnest를 사용합니다.
+    """
+    try:
+        from sqlalchemy import literal_column, text as sa_text
+
+        # core_technologies JSONB 배열을 unnest하여 월별 집계
+        base_query = sa_text("""
+            SELECT
+                to_char(date_trunc('month', jp.posted_date), 'YYYY-MM') AS month,
+                tech.value #>> '{}' AS technology,
+                count(*) AS job_count
+            FROM job_posting jp,
+                 jsonb_array_elements(jp.core_technologies) AS tech(value)
+            WHERE jp.posted_date IS NOT NULL
+              AND jp.core_technologies IS NOT NULL
+        """)
+
+        params = {}
+        where_clauses = []
+
+        if technology:
+            where_clauses.append("AND tech.value #>> '{}' = :technology")
+            params["technology"] = technology
+
+        if year:
+            where_clauses.append("AND extract(year FROM jp.posted_date) = :year")
+            params["year"] = year
+
+        extra_where = " ".join(where_clauses)
+        full_query = sa_text(f"""
+            SELECT
+                to_char(date_trunc('month', jp.posted_date), 'YYYY-MM') AS month,
+                tech.value #>> '{{}}'  AS technology,
+                count(*) AS job_count
+            FROM job_posting jp,
+                 jsonb_array_elements(jp.core_technologies) AS tech(value)
+            WHERE jp.posted_date IS NOT NULL
+              AND jp.core_technologies IS NOT NULL
+              {extra_where}
+            GROUP BY month, technology
+            ORDER BY month
+        """)
+
+        results = db.execute(full_query, params).fetchall()
+
+        if not results:
+            return {"labels": [], "datasets": []}
+
+        # 월 라벨과 기술별 데이터 구성
+        months = sorted(list(set(r.month for r in results)))
+        technologies = sorted(list(set(r.technology for r in results)))
+
+        datasets = []
+        for i, tech in enumerate(technologies):
+            data = []
+            for month in months:
+                count = next(
+                    (r.job_count for r in results if r.month == month and r.technology == tech),
+                    0,
+                )
+                data.append(count)
+
+            datasets.append({
+                "label": tech,
+                "data": data,
+                "borderColor": f"rgba({(i * 47 + 100) % 256}, {(i * 83 + 50) % 256}, {(i * 131 + 150) % 256}, 1)",
+                "backgroundColor": f"rgba({(i * 47 + 100) % 256}, {(i * 83 + 50) % 256}, {(i * 131 + 150) % 256}, 0.2)",
+                "fill": False,
+                "tension": 0.1,
+            })
+
+        return {"labels": months, "datasets": datasets}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/available_technologies")
+async def get_available_technologies(db: Session = Depends(get_db_session)):
+    """
+    사용 가능한 핵심 기술 목록을 반환합니다.
+    """
+    try:
+        from sqlalchemy import text as sa_text
+
+        results = db.execute(sa_text("""
+            SELECT DISTINCT tech.value #>> '{}' AS technology
+            FROM job_posting jp,
+                 jsonb_array_elements(jp.core_technologies) AS tech(value)
+            WHERE jp.core_technologies IS NOT NULL
+            ORDER BY technology
+        """)).fetchall()
+
+        return {"technologies": [r.technology for r in results]}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

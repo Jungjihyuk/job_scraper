@@ -22,6 +22,8 @@ class JobPostingSchema(BaseModel):
     posted_date: Optional[str] = None
     tags: Optional[Any] = None
     benefits: Optional[Any] = None
+    domain: Optional[str] = None
+    core_technologies: Optional[list] = None
 
 
 class CompanySchema(BaseModel):

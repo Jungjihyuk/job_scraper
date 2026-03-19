@@ -7,6 +7,7 @@ from backend.pipeline.stages.base import BaseStage
 from backend.pipeline.data_models import JobDetails
 from backend.pipeline.normalizers.job import JobNormalizer, NormalizationResult
 from backend.pipeline.normalizers.experience import ExperienceNormalizer, ExperienceNormalizationResult
+from backend.pipeline.normalizers.content import ContentAnalyzer
 from backend.core.logging import create_development_logger
 
 class JobNormalizerStage(BaseStage):
@@ -21,6 +22,7 @@ class JobNormalizerStage(BaseStage):
         super().__init__("JobNormalizer", enable_duplicate_check)
         self.job_normalizer = JobNormalizer()
         self.experience_normalizer = ExperienceNormalizer()
+        self.content_analyzer = ContentAnalyzer()
         self.logger = create_development_logger("pipeline.JobNormalizer")
     
     async def process(self, data: List[JobDetails]) -> List[JobDetails]:
@@ -46,7 +48,10 @@ class JobNormalizerStage(BaseStage):
                 
                 # 경력 정규화
                 normalized_job_details = self._normalize_experience(normalized_job_details)
-                
+
+                # 콘텐츠 분석 (도메인 + 핵심 기술)
+                normalized_job_details = self._analyze_content(normalized_job_details)
+
                 normalized_data.append(normalized_job_details)
                 self.update_metrics(processed=1)
                     
@@ -78,9 +83,18 @@ class JobNormalizerStage(BaseStage):
             posting_id = getattr(job_details.job_url, 'posting_id', 'Unknown')
             self.logger.warning(f"⚠️ No position found in item: {posting_id}")
             return job_details
-        
-        # 직무명 정규화 수행
-        result = self.job_normalizer.normalize_position(position)
+
+        # 본문 텍스트 추출
+        body_parts = []
+        if job_details.job_description:
+            for key in ("main_tasks", "requirements", "preferred"):
+                text = job_details.job_description.get(key, "")
+                if text:
+                    body_parts.append(text)
+        body_text = " ".join(body_parts)
+
+        # 직무명 정규화 수행 (본문 fallback 포함)
+        result = self.job_normalizer.normalize_position_with_body(position, body_text)
         
         # JobDetails 객체에 정규화 정보 저장 (job_description에 추가)
         if not job_details.job_description:
@@ -95,14 +109,15 @@ class JobNormalizerStage(BaseStage):
             'manual_review': result.manual_review
         }
         
-        # job_specialty 필드 추가 (DB 저장용)
-        if result.confidence >= self.job_normalizer.confidence_threshold:
+        # job_specialty 필드 추가 (DB 저장용, threshold 0.6으로 하향)
+        specialty_threshold = 0.6
+        if result.confidence >= specialty_threshold:
             job_details.job_description['job_specialty'] = result.standardized_title
         else:
             job_details.job_description['job_specialty'] = None
-        
+
         # 로깅
-        if result.confidence >= self.job_normalizer.confidence_threshold:
+        if result.confidence >= specialty_threshold:
             self.logger.debug(
                 f"✅ Position normalized: '{position}' → '{result.standardized_title}' "
                 f"(confidence: {result.confidence:.2f})"
@@ -110,7 +125,7 @@ class JobNormalizerStage(BaseStage):
         else:
             self.logger.info(
                 f"⚠️ Low confidence position normalization: '{position}' → '{result.standardized_title}' "
-                f"(confidence: {result.confidence:.2f})"
+                f"(confidence: {result.confidence:.2f}, method: {result.matching_method})"
             )
         
         return job_details
@@ -171,6 +186,44 @@ class JobNormalizerStage(BaseStage):
         
         return job_details
     
+    def _analyze_content(self, job_details: JobDetails) -> JobDetails:
+        """
+        본문에서 도메인 및 핵심 기술 추출
+
+        Args:
+            job_details: JobDetails 객체
+
+        Returns:
+            도메인/기술 정보가 추가된 JobDetails 객체
+        """
+        if not job_details.job_description:
+            return job_details
+
+        # main_tasks + requirements + preferred 결합
+        parts = []
+        for key in ("main_tasks", "requirements", "preferred"):
+            text = job_details.job_description.get(key, "")
+            if text:
+                parts.append(text)
+
+        body_text = " ".join(parts)
+        if not body_text.strip():
+            return job_details
+
+        result = self.content_analyzer.analyze(body_text)
+
+        if result.domain:
+            job_details.job_description["domain"] = result.domain
+        if result.core_technologies:
+            job_details.job_description["core_technologies"] = result.core_technologies
+
+        self.logger.debug(
+            f"Content analysis: domain={result.domain}, "
+            f"technologies={result.core_technologies}"
+        )
+
+        return job_details
+
     async def process_single_batch(self, batch: List[JobDetails]) -> List[JobDetails]:
         """
         배치 단위로 정규화 처리 (필요시 사용)

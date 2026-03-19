@@ -211,6 +211,104 @@ class JobNormalizer:
         # 매칭 실패 시 원본 반환
         return text, 0.0, "no_match"
     
+    # 본문 키워드 기반 직무 추론 규칙
+    BODY_KEYWORD_RULES: Dict[str, List[str]] = {
+        '데이터 엔지니어': [
+            'ETL', 'ELT', 'data pipeline', '데이터 파이프라인', 'spark', 'kafka',
+            'airflow', 'hadoop', 'data warehouse', '데이터 웨어하우스',
+            'data lake', '데이터 레이크', 'dbt', 'hive', 'presto',
+        ],
+        'AI 엔지니어': [
+            'LLM', 'GPT', 'transformer', '모델 학습', 'model training',
+            'fine-tuning', '파인튜닝', 'pytorch', 'tensorflow',
+            'inference', '추론', 'RAG', 'embedding',
+        ],
+        '데이터 사이언티스트': [
+            '통계 분석', 'statistical analysis', 'A/B 테스트', 'A/B test',
+            '가설 검증', 'hypothesis', '예측 모델', 'predictive',
+            'feature engineering', '피처 엔지니어링', 'scikit-learn',
+        ],
+        '데이터 분석가': [
+            'SQL', '대시보드', 'dashboard', 'tableau', 'looker',
+            '지표', 'KPI', 'metric', '리포트', 'report',
+            'GA', 'google analytics', '분석 결과',
+        ],
+        'AI 연구원': [
+            '논문', 'paper', 'research', '연구', 'SOTA',
+            'state-of-the-art', 'novel', 'benchmark',
+            'ablation', 'experiment', '실험',
+        ],
+        '백엔드 개발자': [
+            'REST API', 'API 개발', 'API 설계', '서버 개발',
+            'spring', 'django', 'fastapi', 'node.js',
+            'microservice', 'MSA', '데이터베이스 설계',
+        ],
+        '프론트엔드 개발자': [
+            'react', 'vue', 'angular', 'next.js', 'typescript',
+            'CSS', 'HTML', 'UI/UX', '웹 프론트',
+            'SPA', 'SSR', '컴포넌트',
+        ],
+        '풀스택 개발자': [
+            'fullstack', 'full-stack', '프론트엔드와 백엔드',
+            'frontend and backend', '웹 애플리케이션 전체',
+        ],
+    }
+
+    def normalize_position_with_body(self, position: str, body_text: str) -> NormalizationResult:
+        """
+        직무명 + 본문 텍스트를 활용한 고도화된 정규화
+
+        Args:
+            position: 원본 직무명
+            body_text: 채용공고 본문 텍스트
+
+        Returns:
+            NormalizationResult: 정규화 결과
+        """
+        # 1. 기존 직무명 기반 정규화 실행
+        title_result = self.normalize_position(position)
+
+        # 2. confidence >= 0.8이면 즉시 반환
+        if title_result.confidence >= 0.8:
+            return title_result
+
+        # 3. 본문 키워드 기반 매칭
+        body_result = self._match_by_body(position, body_text)
+
+        # 4. 둘 중 높은 confidence 결과 반환
+        if body_result and body_result.confidence > title_result.confidence:
+            return body_result
+
+        return title_result
+
+    def _match_by_body(self, position: str, body_text: str) -> Optional[NormalizationResult]:
+        """본문 키워드 기반 직무 추론"""
+        if not body_text or not body_text.strip():
+            return None
+
+        lower_text = body_text.lower()
+        best_match = None
+        best_count = 0
+
+        for standard_name, keywords in self.BODY_KEYWORD_RULES.items():
+            match_count = sum(1 for kw in keywords if kw.lower() in lower_text)
+            if match_count > best_count:
+                best_count = match_count
+                best_match = standard_name
+
+        if best_match and best_count >= 2:
+            confidence = 0.7 if best_count >= 3 else 0.6
+            return NormalizationResult(
+                raw_title=position,
+                clean_title=self._clean_job_title(position),
+                standardized_title=best_match,
+                confidence=confidence,
+                matching_method="body_keyword_match",
+                manual_review=confidence < self.confidence_threshold,
+            )
+
+        return None
+
     def batch_normalize(self, positions: List[str]) -> List[NormalizationResult]:
         """
         여러 직무명을 일괄 정규화

@@ -28,6 +28,16 @@ class LocationsResponse(BaseModel):
     locations: List[str]
 
 
+class DomainsResponse(BaseModel):
+    """도메인 목록 응답 스키마"""
+    domains: List[str]
+
+
+class TechnologiesResponse(BaseModel):
+    """기술 목록 응답 스키마"""
+    technologies: List[str]
+
+
 class JobFilterRequest(BaseModel):
     """채용공고 필터 요청 스키마"""
     position: Optional[str] = None

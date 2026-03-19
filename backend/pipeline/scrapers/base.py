@@ -163,13 +163,16 @@ class WantedScraper(Scraper):
             # URL에서 posting_id 추출 (예: /wd/323478 → 323478)
             posting_id = href.split("/")[-1] if href.startswith("/wd/") else ""
 
+            # job_category 속성 추출
+            job_category = await href_element.get_attribute("data-job-category") or ""
+
             # JobPostingData 객체 생성
             return JobPostingData(
                 full_url=self.base_url + href,
                 position=position.strip(),
                 company=company.strip(),
                 posting_id=posting_id,
-                job_category="",  # 현재 구조에서는 직접 추출 어려움
+                job_category=job_category,
             )
 
         except Exception as e:

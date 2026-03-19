@@ -141,6 +141,8 @@ class JobPosting(Base):
     hiring_process = Column(Text)
     deadline = Column(DATE)  # 실제 마감일 (상시채용인 경우 NULL)
     is_always_recruiting = Column(Boolean, default=False)  # 상시채용 여부
+    domain = Column(String(100))  # 산업 도메인
+    core_technologies = Column(JSON)  # 핵심 기술 태그
     posted_date = Column(TIMESTAMP)
 
     # Relationships
@@ -159,4 +161,5 @@ class JobPosting(Base):
         Index("idx_job_posting_posted_date", "posted_date"),
         Index("idx_job_posting_deadline", "deadline"),
         Index("idx_job_posting_always_recruiting", "is_always_recruiting"),
+        Index("idx_job_posting_domain", "domain"),
     )
