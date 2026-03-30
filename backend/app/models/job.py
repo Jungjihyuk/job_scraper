@@ -156,6 +156,7 @@ class JobPosting(Base):
     domain_l2 = Column(String(100))  # 산업 도메인 중분류 (AI/딥테크, 핀테크 등)
     domain_l3 = Column(String(200))  # 산업 도메인 소분류 (필요 시 메모)
     core_technologies = Column(JSONB)  # 핵심 기술 태그
+    taxonomy_version = Column(String(20))  # 분류 기준 버전 (FR-057)
     posted_date = Column(TIMESTAMP)
 
     # Relationships
@@ -176,4 +177,5 @@ class JobPosting(Base):
         Index("idx_job_posting_always_recruiting", "is_always_recruiting"),
         Index("idx_job_posting_domain_l1", "domain_l1"),
         Index("idx_job_posting_domain_l2", "domain_l2"),
+        Index("idx_job_posting_taxonomy_version", "taxonomy_version"),
     )

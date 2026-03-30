@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db_session
 from app.core.logging import create_development_logger
+from app.services.taxonomy import get_taxonomy_manager
 
 logger = create_development_logger(__name__)
 
@@ -76,19 +77,22 @@ async def handle_label_studio_webhook(
     ai_domain = task_data.get("ai_domain")
 
     try:
+        taxonomy_version = get_taxonomy_manager().get_version("domain")
+
         # UPSERT: posting_id + annotation_id 기준
         upsert_sql = text("""
             INSERT INTO domain_review_staging
                 (posting_id, reviewed_domain, ai_predicted_domain, reviewer_note,
-                 annotation_id, reviewed_at, status)
+                 annotation_id, reviewed_at, status, taxonomy_version)
             VALUES
                 (:posting_id, :reviewed_domain, :ai_predicted_domain, :reviewer_note,
-                 :annotation_id, :reviewed_at, 'pending')
+                 :annotation_id, :reviewed_at, 'pending', :taxonomy_version)
             ON CONFLICT (posting_id, annotation_id) DO UPDATE SET
                 reviewed_domain = EXCLUDED.reviewed_domain,
                 reviewer_note = EXCLUDED.reviewer_note,
                 reviewed_at = EXCLUDED.reviewed_at,
-                status = 'pending'
+                status = 'pending',
+                taxonomy_version = EXCLUDED.taxonomy_version
         """)
 
         db.execute(
@@ -100,6 +104,7 @@ async def handle_label_studio_webhook(
                 "reviewer_note": result.get("note"),
                 "annotation_id": annotation_id,
                 "reviewed_at": datetime.utcnow(),
+                "taxonomy_version": taxonomy_version,
             },
         )
         db.commit()

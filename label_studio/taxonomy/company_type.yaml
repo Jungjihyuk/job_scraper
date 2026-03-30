@@ -1,0 +1,102 @@
+# 기업 유형 분류 체계 (Taxonomy)
+# Version: 1.0.0
+# Last Updated: 2026-03-31
+
+version: "1.0.0"
+
+categories:
+  SI:
+    description: "시스템 통합(System Integration) 기업"
+    inclusion_criteria:
+      - "고객사 시스템 구축/통합 프로젝트 수행"
+      - "대규모 IT 외주 프로젝트 중심"
+      - "삼성SDS, LG CNS, SK C&C 등 대기업 SI 계열사"
+      - "중소 SI 업체"
+    exclusion_criteria:
+      - "자체 제품/서비스가 주력인 기업"
+      - "컨설팅만 하고 구현은 안 하는 기업"
+    edge_cases:
+      - case: "SI 출신이지만 자체 서비스 전환 중"
+        resolution: "현재 매출 비중 기준 — SI 프로젝트가 50% 이상이면 SI"
+      - case: "고객사 상주 개발"
+        resolution: "SI로 분류"
+
+  대기업IT:
+    description: "대기업 직속 IT 조직 또는 IT 자회사"
+    inclusion_criteria:
+      - "그룹사 IT 서비스를 전담하는 자회사"
+      - "네이버, 카카오, 쿠팡 등 IT 대기업 본사"
+      - "금융권 IT 자회사 (KB데이타시스템 등)"
+    exclusion_criteria:
+      - "SI 프로젝트가 주력 (→ SI)"
+      - "직원 100명 미만 스타트업 (→ 스타트업)"
+    edge_cases:
+      - case: "대기업에서 분사한 스타트업"
+        resolution: "분사 후 독립 운영이면 스타트업, 그룹사 의존도 높으면 대기업IT"
+
+  솔루션:
+    description: "특정 도메인의 패키지 소프트웨어/솔루션 기업"
+    inclusion_criteria:
+      - "자체 개발한 소프트웨어 제품 판매"
+      - "보안, ERP, CRM 등 특화 솔루션"
+      - "온프레미스 또는 SaaS 형태 제품"
+    exclusion_criteria:
+      - "프로젝트 기반 커스텀 개발 (→ SI)"
+      - "플랫폼 서비스 (→ IT서비스)"
+    edge_cases:
+      - case: "솔루션 + SI 혼합"
+        resolution: "자체 솔루션 매출이 더 크면 솔루션"
+      - case: "오픈소스 기반 상용화"
+        resolution: "솔루션으로 분류"
+
+  IT서비스:
+    description: "IT 기반 플랫폼/서비스 기업"
+    inclusion_criteria:
+      - "자체 플랫폼/서비스 운영 (B2C 또는 B2B)"
+      - "토스, 당근, 배달의민족 등"
+      - "SaaS 스타트업 중 일정 규모 이상"
+    exclusion_criteria:
+      - "패키지 판매 중심 (→ 솔루션)"
+      - "프로젝트 수주 중심 (→ SI)"
+    edge_cases:
+      - case: "스타트업에서 성장한 IT 서비스"
+        resolution: "직원 규모와 서비스 안정성 기준 — 시리즈B+ 또는 직원 100명+이면 IT서비스"
+
+  웹에이전시:
+    description: "웹사이트/앱 제작 에이전시"
+    inclusion_criteria:
+      - "고객 의뢰 기반 웹/앱 제작"
+      - "디자인 + 개발 패키지 서비스"
+      - "소규모 프로젝트 다수 동시 진행"
+    exclusion_criteria:
+      - "대규모 시스템 통합 (→ SI)"
+      - "자체 서비스 운영이 주력 (→ IT서비스)"
+    edge_cases:
+      - case: "에이전시 + 자체 서비스"
+        resolution: "에이전시 매출이 더 크면 웹에이전시"
+
+  스타트업:
+    description: "초기 단계 IT 스타트업"
+    inclusion_criteria:
+      - "시리즈A 이하 초기 투자 단계"
+      - "직원 50명 이하 소규모 팀"
+      - "빠른 성장 추구, MVP/PMF 단계"
+    exclusion_criteria:
+      - "설립 5년 이상 + 안정적 수익 (→ IT서비스 또는 솔루션)"
+      - "SI/에이전시 프로젝트로 수익 (→ 해당 유형)"
+    edge_cases:
+      - case: "유니콘 스타트업"
+        resolution: "시리즈C+ 또는 직원 300명+이면 IT서비스로 재분류 검토"
+      - case: "1인 개발사"
+        resolution: "스타트업으로 분류"
+
+  미분류:
+    description: "위 유형에 해당하지 않거나 정보 부족"
+    inclusion_criteria:
+      - "기업 정보 부족으로 판단 불가"
+      - "비IT 기업의 IT 채용 (제조업체 등)"
+    exclusion_criteria:
+      - "어떤 유형으로든 분류 가능한 경우"
+    edge_cases:
+      - case: "공공기관/공기업"
+        resolution: "미분류로 두고 추후 '공공' 카테고리 신설 검토"
