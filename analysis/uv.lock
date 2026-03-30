@@ -1236,6 +1236,7 @@ dependencies = [
     { name = "jupyter" },
     { name = "kiwipiepy" },
     { name = "konlpy" },
+    { name = "koreanize-matplotlib" },
     { name = "matplotlib" },
     { name = "notebook" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -1268,6 +1269,7 @@ requires-dist = [
     { name = "jupyter", specifier = ">=1.0" },
     { name = "kiwipiepy", specifier = ">=0.23.0" },
     { name = "konlpy", specifier = ">=0.6" },
+    { name = "koreanize-matplotlib", specifier = ">=0.1.1" },
     { name = "matplotlib", specifier = ">=3.7" },
     { name = "notebook", specifier = ">=7.0" },
     { name = "numpy", specifier = ">=1.24" },
@@ -1756,6 +1758,18 @@ dependencies = [
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5a/95/896914d9461c12f07e6f8afb1f7462e28395fc46b54fcbb96f1ea3cff8fb/konlpy-0.6.0-py2.py3-none-any.whl", hash = "sha256:0b7928059e20eb1c72f6fe65a3d12c104fae9e68173904e16beef869cf0ea590", size = 19430923, upload-time = "2022-01-02T12:22:08.195Z" },
+]
+
+[[package]]
+name = "koreanize-matplotlib"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9b/7b/56c3ec7f9fcf806bbe46f5ed4f3966222faf7891279751c8384d6200eab9/koreanize-matplotlib-0.1.1.tar.gz", hash = "sha256:0930075aac18aab8bc871fc76134776b8bc240bd1cd2acfc00ebd3713323c444", size = 7926102, upload-time = "2022-12-27T09:02:35.257Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ef/91/93f56a4526d2dbead44250d9166d97568c2ce051c90eaa4be36788d59131/koreanize_matplotlib-0.1.1-py3-none-any.whl", hash = "sha256:4f563db1a75d9eb6bdb667a435adf8a5daf7e41504486f1b0fb1c20e4bfed4ca", size = 7945390, upload-time = "2022-12-27T09:02:28.212Z" },
 ]
 
 [[package]]

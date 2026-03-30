@@ -76,3 +76,10 @@ docs/
 
 # Codex
 .codex
+
+# Labeling data
+data/
+
+# Label Studio
+label_studio/scripts/import_tasks.json
+label_studio/scripts/.imported_posting_ids.json
