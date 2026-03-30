@@ -202,11 +202,11 @@ async def get_domain_distribution(db: Session = Depends(get_db_session)):
     try:
         results = (
             db.query(
-                JobPosting.domain,
+                JobPosting.domain_l2,
                 func.count(JobPosting.id).label("job_count"),
             )
-            .filter(JobPosting.domain.is_not(None))
-            .group_by(JobPosting.domain)
+            .filter(JobPosting.domain_l2.is_not(None))
+            .group_by(JobPosting.domain_l2)
             .order_by(func.count(JobPosting.id).desc())
             .all()
         )
@@ -214,7 +214,7 @@ async def get_domain_distribution(db: Session = Depends(get_db_session)):
         if not results:
             return {"labels": [], "datasets": []}
 
-        labels = [r.domain for r in results]
+        labels = [r.domain_l2 for r in results]
         data = [r.job_count for r in results]
 
         dataset = {
@@ -238,68 +238,50 @@ async def get_technology_trends(
     db: Session = Depends(get_db_session),
 ):
     """
-    기술별 월간 트렌드를 반환합니다. JSONB unnest를 사용합니다.
+    기술별 월간 트렌드를 반환합니다. ORM 쿼리 후 Python에서 JSONB 배열을 풀어냅니다.
     """
     try:
-        from sqlalchemy import literal_column, text as sa_text
+        from collections import defaultdict
 
-        # core_technologies JSONB 배열을 unnest하여 월별 집계
-        base_query = sa_text("""
-            SELECT
-                to_char(date_trunc('month', jp.posted_date), 'YYYY-MM') AS month,
-                tech.value #>> '{}' AS technology,
-                count(*) AS job_count
-            FROM job_posting jp,
-                 jsonb_array_elements(jp.core_technologies) AS tech(value)
-            WHERE jp.posted_date IS NOT NULL
-              AND jp.core_technologies IS NOT NULL
-        """)
-
-        params = {}
-        where_clauses = []
-
-        if technology:
-            where_clauses.append("AND tech.value #>> '{}' = :technology")
-            params["technology"] = technology
+        query = (
+            db.query(
+                JobPosting.posted_date,
+                JobPosting.core_technologies,
+            )
+            .filter(
+                JobPosting.posted_date.is_not(None),
+                JobPosting.core_technologies.is_not(None),
+            )
+        )
 
         if year:
-            where_clauses.append("AND extract(year FROM jp.posted_date) = :year")
-            params["year"] = year
+            query = query.filter(extract('year', JobPosting.posted_date) == year)
 
-        extra_where = " ".join(where_clauses)
-        full_query = sa_text(f"""
-            SELECT
-                to_char(date_trunc('month', jp.posted_date), 'YYYY-MM') AS month,
-                tech.value #>> '{{}}'  AS technology,
-                count(*) AS job_count
-            FROM job_posting jp,
-                 jsonb_array_elements(jp.core_technologies) AS tech(value)
-            WHERE jp.posted_date IS NOT NULL
-              AND jp.core_technologies IS NOT NULL
-              {extra_where}
-            GROUP BY month, technology
-            ORDER BY month
-        """)
+        rows = query.all()
 
-        results = db.execute(full_query, params).fetchall()
+        # Python에서 JSONB 배열 unnest + 월별 집계
+        # {(month, tech): count}
+        counts = defaultdict(int)
+        for row in rows:
+            techs = row.core_technologies
+            if not isinstance(techs, list):
+                continue
+            month = row.posted_date.strftime('%Y-%m')
+            for t in techs:
+                tech_name = t if isinstance(t, str) else str(t)
+                if technology and tech_name != technology:
+                    continue
+                counts[(month, tech_name)] += 1
 
-        if not results:
+        if not counts:
             return {"labels": [], "datasets": []}
 
-        # 월 라벨과 기술별 데이터 구성
-        months = sorted(list(set(r.month for r in results)))
-        technologies = sorted(list(set(r.technology for r in results)))
+        months = sorted(set(m for m, _ in counts))
+        technologies_set = sorted(set(t for _, t in counts))
 
         datasets = []
-        for i, tech in enumerate(technologies):
-            data = []
-            for month in months:
-                count = next(
-                    (r.job_count for r in results if r.month == month and r.technology == tech),
-                    0,
-                )
-                data.append(count)
-
+        for i, tech in enumerate(technologies_set):
+            data = [counts.get((m, tech), 0) for m in months]
             datasets.append({
                 "label": tech,
                 "data": data,
@@ -320,17 +302,21 @@ async def get_available_technologies(db: Session = Depends(get_db_session)):
     사용 가능한 핵심 기술 목록을 반환합니다.
     """
     try:
-        from sqlalchemy import text as sa_text
+        rows = (
+            db.query(JobPosting.core_technologies)
+            .filter(JobPosting.core_technologies.is_not(None))
+            .all()
+        )
 
-        results = db.execute(sa_text("""
-            SELECT DISTINCT tech.value #>> '{}' AS technology
-            FROM job_posting jp,
-                 jsonb_array_elements(jp.core_technologies) AS tech(value)
-            WHERE jp.core_technologies IS NOT NULL
-            ORDER BY technology
-        """)).fetchall()
+        tech_set = set()
+        for row in rows:
+            techs = row.core_technologies
+            if not isinstance(techs, list):
+                continue
+            for t in techs:
+                tech_set.add(t if isinstance(t, str) else str(t))
 
-        return {"technologies": [r.technology for r in results]}
+        return {"technologies": sorted(tech_set)}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

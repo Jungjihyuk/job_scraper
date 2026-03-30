@@ -48,7 +48,7 @@ async def get_job_postings(
         if location:
             query = query.filter(Location.location == location)
         if domain:
-            query = query.filter(JobPosting.domain == domain)
+            query = query.filter(JobPosting.domain_l2 == domain)
         if technology:
             from sqlalchemy import text
             query = query.filter(
@@ -84,7 +84,8 @@ async def get_job_postings(
                 "is_always_recruiting": job_posting.is_always_recruiting,
                 "original_url": job_posting.original_url,
                 "tags": job_posting.tags,
-                "domain": job_posting.domain,
+                "domain_l1": job_posting.domain_l1,
+                "domain_l2": job_posting.domain_l2,
                 "core_technologies": job_posting.core_technologies,
             }
             for job_posting in job_postings
@@ -116,7 +117,7 @@ async def get_recent_job_postings(
         if exclude_always_recruiting:
             query = query.filter(JobPosting.is_always_recruiting == False)
         if domain:
-            query = query.filter(JobPosting.domain == domain)
+            query = query.filter(JobPosting.domain_l2 == domain)
         if technology:
             query = query.filter(
                 JobPosting.core_technologies.op('?')(technology)
@@ -136,7 +137,8 @@ async def get_recent_job_postings(
                 "original_url": job_posting.original_url,
                 "tags": job_posting.tags,
                 "posted_date": job_posting.posted_date.isoformat() if job_posting.posted_date else None,
-                "domain": job_posting.domain,
+                "domain_l1": job_posting.domain_l1,
+                "domain_l2": job_posting.domain_l2,
                 "core_technologies": job_posting.core_technologies,
             }
             for job_posting in job_postings
@@ -200,10 +202,10 @@ async def get_location(db: Session = Depends(get_db_session)) -> LocationsRespon
 async def get_domains(db: Session = Depends(get_db_session)) -> DomainsResponse:
     """모든 도메인 목록 조회"""
     try:
-        domains = db.query(JobPosting.domain)\
+        domains = db.query(JobPosting.domain_l2)\
                     .distinct()\
-                    .filter(JobPosting.domain.is_not(None))\
-                    .order_by(JobPosting.domain)\
+                    .filter(JobPosting.domain_l2.is_not(None))\
+                    .order_by(JobPosting.domain_l2)\
                     .all()
 
         domain_list = [d[0] for d in domains]
@@ -216,17 +218,21 @@ async def get_domains(db: Session = Depends(get_db_session)) -> DomainsResponse:
 async def get_technologies(db: Session = Depends(get_db_session)) -> TechnologiesResponse:
     """모든 핵심 기술 목록 조회"""
     try:
-        from sqlalchemy import text as sa_text
+        rows = (
+            db.query(JobPosting.core_technologies)
+            .filter(JobPosting.core_technologies.is_not(None))
+            .all()
+        )
 
-        results = db.execute(sa_text("""
-            SELECT DISTINCT tech.value #>> '{}' AS technology
-            FROM job_posting jp,
-                 jsonb_array_elements(jp.core_technologies) AS tech(value)
-            WHERE jp.core_technologies IS NOT NULL
-            ORDER BY technology
-        """)).fetchall()
+        tech_set = set()
+        for row in rows:
+            techs = row.core_technologies
+            if not isinstance(techs, list):
+                continue
+            for t in techs:
+                tech_set.add(t if isinstance(t, str) else str(t))
 
-        return TechnologiesResponse(technologies=[r.technology for r in results])
+        return TechnologiesResponse(technologies=sorted(tech_set))
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

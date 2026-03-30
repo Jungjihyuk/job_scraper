@@ -23,8 +23,12 @@ function DeadlineBadge({ job }: { job: JobPosting }) {
 }
 
 export function JobCard({ job }: Props) {
-  const tags = Array.isArray(job.tags) ? job.tags : job.tags ? [job.tags] : []
-  const techs = Array.isArray(job.core_technologies) ? job.core_technologies : []
+  const tags = (Array.isArray(job.tags) ? job.tags : job.tags ? [job.tags] : [])
+    .map((t) => (typeof t === 'string' ? t : JSON.stringify(t)))
+    .filter(Boolean)
+  const techs = (Array.isArray(job.core_technologies) ? job.core_technologies : [])
+    .map((t) => (typeof t === 'string' ? t : JSON.stringify(t)))
+    .filter(Boolean)
 
   return (
     <div className='rounded-lg border border-slate-200 bg-white p-4 shadow-sm'>
@@ -49,10 +53,10 @@ export function JobCard({ job }: Props) {
         <span>👥 {job.experience || '미상'}</span>
         <DeadlineBadge job={job} />
       </div>
-      {job.domain && (
+      {job.domain_l2 && (
         <div className='mt-2'>
           <span className='rounded bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700'>
-            {job.domain}
+            {job.domain_l2}
           </span>
         </div>
       )}

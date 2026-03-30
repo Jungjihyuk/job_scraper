@@ -16,6 +16,7 @@ from sqlalchemy import (
     Index,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -141,8 +142,10 @@ class JobPosting(Base):
     hiring_process = Column(Text)
     deadline = Column(DATE)  # 실제 마감일 (상시채용인 경우 NULL)
     is_always_recruiting = Column(Boolean, default=False)  # 상시채용 여부
-    domain = Column(String(100))  # 산업 도메인
-    core_technologies = Column(JSON)  # 핵심 기술 태그
+    domain_l1 = Column(String(50))  # 산업 도메인 대분류 (IT, 금융, 제조/하드웨어 등)
+    domain_l2 = Column(String(100))  # 산업 도메인 중분류 (AI/딥테크, 핀테크 등)
+    domain_l3 = Column(String(200))  # 산업 도메인 소분류 (필요 시 메모)
+    core_technologies = Column(JSONB)  # 핵심 기술 태그
     posted_date = Column(TIMESTAMP)
 
     # Relationships
@@ -161,5 +164,6 @@ class JobPosting(Base):
         Index("idx_job_posting_posted_date", "posted_date"),
         Index("idx_job_posting_deadline", "deadline"),
         Index("idx_job_posting_always_recruiting", "is_always_recruiting"),
-        Index("idx_job_posting_domain", "domain"),
+        Index("idx_job_posting_domain_l1", "domain_l1"),
+        Index("idx_job_posting_domain_l2", "domain_l2"),
     )

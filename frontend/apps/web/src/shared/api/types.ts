@@ -29,7 +29,8 @@ export type JobPosting = {
   original_url: string | null
   tags: string[] | null
   posted_date?: string | null
-  domain?: string | null
+  domain_l1?: string | null
+  domain_l2?: string | null
   core_technologies?: string[] | null
 }
 
