@@ -7,9 +7,9 @@ of success or failure. Useful for post-mortem analysis when
 ContentScraper times out.
 
 Usage:
-    uv run python scripts/diagnostics/capture_failure.py
-    uv run python scripts/diagnostics/capture_failure.py --url https://www.wanted.co.kr/wd/12345
-    uv run python scripts/diagnostics/capture_failure.py --timeout 60000
+    uv run python backend/pipeline/diagnostics/capture_failure.py
+    uv run python backend/pipeline/diagnostics/capture_failure.py --url https://www.wanted.co.kr/wd/12345
+    uv run python backend/pipeline/diagnostics/capture_failure.py --timeout 60000
 """
 
 import argparse
