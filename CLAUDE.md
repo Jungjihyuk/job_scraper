@@ -29,6 +29,12 @@ black backend/ && isort backend/ && flake8 backend/
 # Tests
 pytest tests/
 
+# DB migrations (Alembic)
+uv run alembic revision --autogenerate -m "description"
+uv run alembic upgrade head
+uv run alembic downgrade -1
+uv run alembic current
+
 # Analysis environment (separate venv)
 cd analysis && uv run jupyter lab
 ```
