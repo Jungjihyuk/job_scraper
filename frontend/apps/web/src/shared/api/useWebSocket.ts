@@ -15,18 +15,25 @@ export function useWebSocket(url: string): UseWebSocketResult {
   const maxRetries = 5
 
   useEffect(() => {
+    let cancelled = false
     let retryTimeout: ReturnType<typeof setTimeout> | null = null
 
     const connect = () => {
+      if (cancelled) return
       const ws = new WebSocket(url)
       wsRef.current = ws
 
       ws.onopen = () => {
+        if (cancelled) {
+          ws.close()
+          return
+        }
         setIsConnected(true)
         retryCountRef.current = 0
       }
 
       ws.onmessage = (event) => {
+        if (cancelled) return
         try {
           const data = JSON.parse(event.data as string) as WsEvent
           setMessages((prev) => {
@@ -39,6 +46,7 @@ export function useWebSocket(url: string): UseWebSocketResult {
       }
 
       ws.onclose = () => {
+        if (cancelled) return
         setIsConnected(false)
         if (retryCountRef.current < maxRetries) {
           retryCountRef.current += 1
@@ -54,9 +62,9 @@ export function useWebSocket(url: string): UseWebSocketResult {
     connect()
 
     return () => {
+      cancelled = true
       if (retryTimeout) clearTimeout(retryTimeout)
-      if (wsRef.current) {
-        wsRef.current.onclose = null // prevent retry on intentional close
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.close()
       }
     }
