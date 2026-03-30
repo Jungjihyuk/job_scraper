@@ -1,13 +1,8 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.websockets import WebSocketState
-import os
-import subprocess
 
 from backend.core.database import init_database
-from backend.ws.manager import ConnectionManager, manager
+from backend.ws.manager import manager
 from backend.api.routes import (
     dashboard,
     job_postings,
@@ -30,13 +25,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static files 마운트
-app.mount(
-    "/static",
-    StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")),
-    name="static",
-)
-
 app.include_router(dashboard.router)
 app.include_router(job_postings.router)
 app.include_router(scraping.router)
@@ -57,17 +45,6 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text()  # 연결 유지
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-
-
-@app.get("/", response_class=HTMLResponse)
-async def dashboard_page():
-    """대시보드 메인 페이지"""
-
-    dashboard_page = os.path.join(
-        os.path.dirname(__file__), "templates", "dashboard.html"
-    )
-    with open(dashboard_page, "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
 
 
 if __name__ == "__main__":

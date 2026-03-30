@@ -36,6 +36,7 @@ dependencies = [
     "label-studio>=1.23.0",
     "redis>=5.2.1",
     "python-multipart>=0.0.22",
+    "alembic>=1.13.0,<2",
 ]
 
 [build-system]
