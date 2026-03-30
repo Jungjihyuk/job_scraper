@@ -21,4 +21,5 @@ export type {
   DomainsResponse,
   TechnologiesResponse,
   AvailableTechnologiesResponse,
+  CompanyTypesResponse,
 } from './types'

@@ -6,5 +6,6 @@ export type DeadlineFilter = {
   location?: string
   domain?: string
   technology?: string
+  company_type?: string
   include_expired?: boolean
 }

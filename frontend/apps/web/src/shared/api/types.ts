@@ -55,3 +55,4 @@ export type AvailableYearsResponse = { years: number[] }
 export type DomainsResponse = { domains: string[] }
 export type TechnologiesResponse = { technologies: string[] }
 export type AvailableTechnologiesResponse = { technologies: string[] }
+export type CompanyTypesResponse = { company_types: string[] }

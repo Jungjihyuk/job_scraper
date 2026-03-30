@@ -7,8 +7,12 @@ import {
   fetchDomainDistribution,
   fetchTechnologyTrends,
   fetchAvailableTechnologies,
+  fetchCompanyTypeDistribution,
+  fetchDomainByCompanyType,
+  fetchTechnologyByCompanyType,
 } from '../api/statisticsApi'
-import { transformStackedBar, transformHorizontalBar, transformLineChart } from '../lib/transforms'
+import { transformStackedBar, transformHorizontalBar, transformLineChart, transformTreemap } from '../lib/transforms'
+import type { TreemapNode } from '../lib/transforms'
 import type { StackedBarData, LineChartData } from './types'
 
 type ChartHookResult<T> = { data: T; loading: boolean; error: string | null }
@@ -99,6 +103,72 @@ export function useDomainDistribution(): ChartHookResult<StackedBarData> {
       try {
         const raw = await fetchDomainDistribution()
         setData(transformStackedBar(raw))
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '알 수 없는 오류')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [])
+
+  return { data, loading, error }
+}
+
+export function useCompanyTypeDistribution(): ChartHookResult<StackedBarData> {
+  const [data, setData] = useState<StackedBarData>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const raw = await fetchCompanyTypeDistribution()
+        setData(transformStackedBar(raw))
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '알 수 없는 오류')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [])
+
+  return { data, loading, error }
+}
+
+export function useDomainByCompanyType(): ChartHookResult<TreemapNode[]> {
+  const [data, setData] = useState<TreemapNode[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const raw = await fetchDomainByCompanyType()
+        setData(transformTreemap(raw))
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '알 수 없는 오류')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [])
+
+  return { data, loading, error }
+}
+
+export function useTechnologyByCompanyType(): ChartHookResult<StackedBarData> {
+  const [data, setData] = useState<StackedBarData>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const raw = await fetchTechnologyByCompanyType()
+        setData(transformHorizontalBar(raw))
       } catch (e) {
         setError(e instanceof Error ? e.message : '알 수 없는 오류')
       } finally {

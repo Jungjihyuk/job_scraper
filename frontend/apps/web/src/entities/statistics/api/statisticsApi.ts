@@ -40,3 +40,15 @@ export async function fetchTechnologyTrends(params?: {
 export async function fetchAvailableTechnologies(): Promise<AvailableTechnologiesResponse> {
   return getJson<AvailableTechnologiesResponse>('/api/statistics/available_technologies')
 }
+
+export async function fetchCompanyTypeDistribution(): Promise<ChartResponse> {
+  return getJson<ChartResponse>('/api/statistics/company_type_distribution')
+}
+
+export async function fetchDomainByCompanyType(): Promise<ChartResponse> {
+  return getJson<ChartResponse>('/api/statistics/domain_by_company_type')
+}
+
+export async function fetchTechnologyByCompanyType(): Promise<ChartResponse> {
+  return getJson<ChartResponse>('/api/statistics/technology_by_company_type')
+}

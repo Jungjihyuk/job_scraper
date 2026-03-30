@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchJobCategories, fetchExperiences, fetchLocations, fetchDomains, fetchTechnologies } from '../api/jobPostingApi'
+import { fetchJobCategories, fetchExperiences, fetchLocations, fetchDomains, fetchTechnologies, fetchCompanyTypes } from '../api/jobPostingApi'
 
 type UseFilterOptionsResult = {
   categories: string[]
@@ -7,6 +7,7 @@ type UseFilterOptionsResult = {
   locations: string[]
   domains: string[]
   technologies: string[]
+  companyTypes: string[]
   loading: boolean
 }
 
@@ -16,23 +17,26 @@ export function useFilterOptions(): UseFilterOptionsResult {
   const [locations, setLocations] = useState<string[]>([])
   const [domains, setDomains] = useState<string[]>([])
   const [technologies, setTechnologies] = useState<string[]>([])
+  const [companyTypes, setCompanyTypes] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [catData, expData, locData, domData, techData] = await Promise.all([
+        const [catData, expData, locData, domData, techData, ctData] = await Promise.all([
           fetchJobCategories(),
           fetchExperiences(),
           fetchLocations(),
           fetchDomains(),
           fetchTechnologies(),
+          fetchCompanyTypes(),
         ])
         setCategories(catData.categories)
         setExperiences(expData.experiences)
         setLocations(locData.locations)
         setDomains(domData.domains)
         setTechnologies(techData.technologies)
+        setCompanyTypes(ctData.company_types)
       } catch {
       } finally {
         setLoading(false)
@@ -41,5 +45,5 @@ export function useFilterOptions(): UseFilterOptionsResult {
     void load()
   }, [])
 
-  return { categories, experiences, locations, domains, technologies, loading }
+  return { categories, experiences, locations, domains, technologies, companyTypes, loading }
 }
