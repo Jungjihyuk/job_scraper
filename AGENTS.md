@@ -1,7 +1,6 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-03-18
-**Commit:** 65ccc4d2
+**Generated:** 2026-03-27
 **Branch:** feature/v2-data-normalization
 
 ## OVERVIEW
@@ -19,20 +18,24 @@ job_scraper/
 │   ├── core/             # Config, DB connection, logging
 │   ├── models/           # SQLAlchemy ORM (job, scraping, base)
 │   ├── schemas/          # Pydantic request/response schemas
-│   ├── pipeline/         # Multi-stage scraping pipeline (see backend/pipeline/AGENTS.md)
+│   ├── pipeline/         # Multi-stage scraping pipeline
+│   │   └── diagnostics/  # Scraper debugging tools (selector check, failure capture)
+│   ├── migrations_legacy/# Old manual migration scripts (to be replaced by Alembic)
 │   ├── ws/               # WebSocket connection manager
 │   └── utils/            # DB helpers, HTTP client, text processing
 ├── frontend/             # pnpm workspace
-│   └── apps/web/src/     # React/TS dashboard (see frontend/apps/web/src/AGENTS.md)
-├── scripts/              # Operational scripts (see scripts/AGENTS.md)
-│   ├── migrations/       # DB schema migration scripts
-│   ├── data_processing/  # Normalization, URL reconstruction
-│   ├── diagnostics/      # Scraper debugging tools
-│   └── analysis/         # Data analysis utilities
+│   └── apps/web/src/     # React/TS dashboard
+├── label_studio/         # Label Studio integration
+│   ├── datasets/         # Labeling input CSV data
+│   ├── exports/          # Reviewed annotation exports
+│   └── scripts/          # LS project setup, import/export, webhook registration
 ├── analysis/             # Jupyter notebooks + ML analysis (separate pyproject.toml)
+│   ├── notebooks/        # Jupyter notebooks
+│   ├── scripts/          # Data analysis & processing scripts
+│   ├── outputs/          # Analysis output CSVs
+│   └── utils/            # DB utilities for analysis
 ├── docs/                 # Obsidian-based project docs (정의서, 명세서, 설계서)
-├── tests/                # pytest (empty — only __init__.py)
-└── logs/                 # Scraping output logs (JSON)
+└── tests/                # pytest (empty — only __init__.py)
 ```
 
 ## WHERE TO LOOK
@@ -42,14 +45,16 @@ job_scraper/
 | Add API endpoint | `backend/api/routes/` | Add router, register in `main.py` |
 | Add scraper for new site | `backend/pipeline/scrapers/` | Extend `BaseScraper` |
 | Add pipeline stage | `backend/pipeline/stages/` | Extend `BaseStage` |
-| Modify DB schema | `backend/models/` + `scripts/migrations/` | ORM model + migration script |
+| Modify DB schema | `backend/models/` | ORM model, migrate via Alembic |
 | Add frontend page | `frontend/apps/web/src/pages/` | Lazy-loaded in `app/router/` |
 | Add shared UI component | `frontend/apps/web/src/shared/ui/` | Exported via barrel |
 | Add entity (FSD) | `frontend/apps/web/src/entities/` | model/ + api/ per entity |
 | Run scraping | `uv run backend/cli.py` | Interactive job selector |
 | Run web dashboard | `uv run uvicorn backend.main:app --reload` | Port 8000 |
 | Run frontend dev | `cd frontend/apps/web && pnpm dev` | Port 5173 |
-| DB migrations | `scripts/migrations/` | Standalone scripts, run with `uv run python` |
+| Diagnose scraper | `backend/pipeline/diagnostics/` | Selector check, failure capture |
+| Label Studio scripts | `label_studio/scripts/` | Import, export, webhook setup |
+| Data processing | `analysis/scripts/` | Normalization, domain review |
 
 ## CONVENTIONS
 
@@ -61,15 +66,6 @@ job_scraper/
 - **DB config**: Environment variables (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`)
 - **Docker postgres port**: 5433:5432 (not default 5432)
 - **Package manager**: `uv` for Python, `pnpm` for frontend
-
-## ANTI-PATTERNS (THIS PROJECT)
-
-- **7 bare `except Exception: pass`** in `content_scraper.py` and `ws/manager.py` — silent error swallowing, needs proper logging
-- **Hardcoded fallback password** `"1234"` in `backend/core/config.py:25` — weak default when `DB_PASSWORD` env var missing
-- **3 commented-out async methods** in `content_scraper.py` (lines 276-318) — dead code, remove or restore
-- **No tests exist** — `tests/` has only `__init__.py`; pytest is a dependency but unused
-- **No CI/CD** — no GitHub Actions workflows, no pre-commit hooks
-- **No Dockerfile** — only docker-compose.yml with pre-built images
 
 ## COMMANDS
 
@@ -87,6 +83,14 @@ cd frontend/apps/web && pnpm build                 # Production build
 docker compose up -d                               # Start all services
 docker compose down                                # Stop all services
 
+# Diagnostics
+uv run python backend/pipeline/diagnostics/diagnose_scraper.py
+uv run python backend/pipeline/diagnostics/check_selectors.py
+
+# Label Studio
+uv run label_studio/scripts/import_from_db.py
+uv run label_studio/scripts/export_annotations.py
+
 # Code quality
 black backend/                                     # Format Python
 isort backend/                                     # Sort imports
@@ -94,10 +98,6 @@ flake8 backend/                                    # Lint
 
 # Tests (when added)
 pytest tests/                                      # Run tests
-
-# DB setup
-psql postgres -f grant_permissions.sql
-psql -U <user> -d <db> -f job_scraper_db.sql
 ```
 
 ## NOTES
@@ -109,4 +109,4 @@ psql -U <user> -d <db> -f job_scraper_db.sql
 - `JOB_CONFIG` in `backend/core/config.py` maps Korean job titles to Wanted.co.kr job IDs
 - `analysis/` is a separate Python project with own `pyproject.toml` and `.venv` — includes optional AI deps (torch, transformers)
 - `docs/` uses Korean (한국어) — Obsidian vault with numbered doc categories (1-8)
-- `.claude/worktrees/` contains old worktree artifacts — ignore
+- `backend/migrations_legacy/` contains old manual migration scripts — will be replaced by Alembic
