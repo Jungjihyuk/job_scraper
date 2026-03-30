@@ -49,15 +49,16 @@
 
 ```
 job_scraper/
-├── backend/                 # FastAPI 서버 + 스크래핑 파이프라인
-│   ├── api/routes/          #   API 엔드포인트
-│   ├── core/                #   설정, DB, 로깅
-│   ├── models/              #   SQLAlchemy ORM
-│   ├── pipeline/            #   파이프라인 (stages, scrapers, normalizers)
-│   │   └── diagnostics/     #   스크래퍼 진단 도구
-│   ├── schemas/             #   Pydantic 스키마
-│   ├── utils/               #   유틸리티
-│   └── cli.py               #   CLI 파이프라인 실행
+├── backend/                 # 백엔드 프로젝트 루트 (pyproject.toml, alembic.ini)
+│   └── app/                 #   FastAPI 서버 + 스크래핑 파이프라인
+│       ├── api/routes/      #     API 엔드포인트
+│       ├── core/            #     설정, DB, 로깅
+│       ├── models/          #     SQLAlchemy ORM
+│       ├── pipeline/        #     파이프라인 (stages, scrapers, normalizers)
+│       │   └── diagnostics/ #     스크래퍼 진단 도구
+│       ├── schemas/         #     Pydantic 스키마
+│       ├── utils/           #     유틸리티
+│       └── cli.py           #     CLI 파이프라인 실행
 ├── frontend/                # React 프론트엔드 (FSD)
 ├── label_studio/            # Label Studio 연동
 │   ├── datasets/            #   라벨링 입력 CSV
@@ -69,8 +70,7 @@ job_scraper/
 │   └── outputs/             #   분석 결과 CSV
 ├── docs/                    # 프로젝트 문서
 ├── tests/                   # 테스트
-├── docker-compose.yml
-└── pyproject.toml
+└── docker-compose.yml
 ```
 
 ## 설치 및 실행
@@ -79,7 +79,7 @@ job_scraper/
 
 ```bash
 git clone <repository-url>
-cd job_scraper
+cd job_scraper/backend
 uv sync
 ```
 
@@ -106,11 +106,11 @@ PostgreSQL, Label Studio(`:8080`) 서비스가 시작됩니다.
 
 ```bash
 # 웹 대시보드
-uv run uvicorn backend.main:app --reload    # http://localhost:8000
+cd backend && uv run uvicorn app.main:app --reload    # http://localhost:8000
 
 # CLI 스크래핑
-uv run backend/cli.py
-uv run backend/cli.py --max-scrolls 5 --debug
+cd backend && uv run app/cli.py
+cd backend && uv run app/cli.py --max-scrolls 5 --debug
 
 # 프론트엔드 개발 서버
 cd frontend/apps/web && pnpm dev            # http://localhost:5173

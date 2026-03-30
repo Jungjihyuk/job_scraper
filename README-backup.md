@@ -153,7 +153,7 @@ DB_SSL_MODE=prefer
 ### 1. 웹 대시보드 실행
 
 ```bash
-uv run uvicorn backend.main:app --reload
+cd backend && uv run uvicorn app.main:app --reload
 ```
 
 브라우저에서 `http://localhost:8000`에 접속하여 대시보드를 사용할 수 있습니다.
@@ -161,7 +161,7 @@ uv run uvicorn backend.main:app --reload
 ### 2. 커맨드라인 파이프라인 실행
 
 ```bash
-uv run backend/cli.py 
+cd backend && uv run app/cli.py
 ```
 
 웹사이트별 설정에 따라 회사별 채용 공고 스크래핑이 시작됩니다.
