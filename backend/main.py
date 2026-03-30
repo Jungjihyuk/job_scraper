@@ -11,9 +11,11 @@ from backend.ws.manager import ConnectionManager, manager
 from backend.api.routes import (
     dashboard,
     job_postings,
+    labeling,
     scraping,
     statistics,
     companies,
+    label_studio_webhook,
 )
 
 
@@ -40,6 +42,8 @@ app.include_router(job_postings.router)
 app.include_router(scraping.router)
 app.include_router(statistics.router)
 app.include_router(companies.router)
+app.include_router(labeling.router)
+app.include_router(label_studio_webhook.router)
 
 # 데이터베이스 초기화
 init_database()
