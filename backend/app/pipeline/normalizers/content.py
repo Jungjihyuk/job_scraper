@@ -13,6 +13,7 @@ class ContentAnalysisResult:
     domain_confidence: float = 0.0
     core_technologies: List[str] = field(default_factory=list)
     analysis_method: str = "keyword_match"
+    taxonomy_version: Optional[str] = None
 
 
 class ContentAnalyzer:
@@ -125,6 +126,16 @@ class ContentAnalyzer:
         ],
     }
 
+    def __init__(self):
+        """ContentAnalyzer 초기화. TaxonomyManager가 있으면 버전을 추적."""
+        self._taxonomy_version = None
+        try:
+            from app.services.taxonomy import get_taxonomy_manager
+            mgr = get_taxonomy_manager()
+            self._taxonomy_version = mgr.get_version("domain")
+        except Exception:
+            pass
+
     def analyze(self, body_text: str) -> ContentAnalysisResult:
         """
         본문 텍스트에서 도메인과 핵심 기술을 추출
@@ -167,4 +178,5 @@ class ContentAnalyzer:
             domain_confidence=domain_confidence,
             core_technologies=core_technologies,
             analysis_method="keyword_match",
+            taxonomy_version=self._taxonomy_version,
         )

@@ -216,6 +216,8 @@ class JobNormalizerStage(BaseStage):
             job_details.job_description["domain"] = result.domain
         if result.core_technologies:
             job_details.job_description["core_technologies"] = result.core_technologies
+        if result.taxonomy_version:
+            job_details.job_description["taxonomy_version"] = result.taxonomy_version
 
         self.logger.debug(
             f"Content analysis: domain={result.domain}, "

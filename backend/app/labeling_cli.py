@@ -12,6 +12,11 @@ Usage:
     uv run app/labeling_cli.py company-export --output label_studio/cli_pipeline/companies_unlabeled.csv
     uv run app/labeling_cli.py company-import --input label_studio/cli_pipeline/companies_labeled.csv --dry-run
     uv run app/labeling_cli.py company-import --input label_studio/cli_pipeline/companies_labeled.csv
+
+    # Taxonomy 기반 재라벨링 (FR-058)
+    uv run app/labeling_cli.py relabel --dry-run
+    uv run app/labeling_cli.py relabel --target domain
+    uv run app/labeling_cli.py relabel --target technology --limit 500
 """
 
 import argparse
@@ -21,6 +26,7 @@ from app.core.database import db_manager
 from app.core.logging import create_development_logger
 from app.services.labeling import export_postings, import_labeled
 from app.services.company_labeling import export_companies, import_company_types
+from app.services.relabeling import count_relabel_targets, relabel_postings
 
 logger = create_development_logger(__name__)
 
@@ -88,6 +94,61 @@ def cmd_company_import(args):
         f"Not found: {result['not_found']}, "
         f"Invalid type: {result['invalid_type']}"
     )
+
+
+def cmd_relabel(args):
+    """Taxonomy 기반 재라벨링."""
+    from app.services.taxonomy import get_taxonomy_manager
+
+    mgr = get_taxonomy_manager()
+    versions = mgr.get_all_versions()
+
+    print(f"Current taxonomy versions: {versions}")
+    print()
+
+    with db_manager.get_session() as session:
+        # Step 1: 영향 범위 파악
+        counts = count_relabel_targets(session, target=args.target)
+        print(f"=== Relabel targets ===")
+        for key, val in counts.items():
+            print(f"  {key}: {val} postings")
+        print()
+
+        if counts.get("total", 0) == 0:
+            print("No postings need relabeling. All up to date.")
+            return
+
+        # Step 2: 재라벨링 실행
+        result = relabel_postings(
+            session=session,
+            target=args.target,
+            dry_run=args.dry_run,
+            limit=args.limit,
+        )
+
+    prefix = "[DRY-RUN] " if args.dry_run else ""
+    print(f"=== {prefix}Relabel results ===")
+    print(f"  Total target:   {result.total_target}")
+    print(f"  Unchanged:      {result.unchanged}")
+    print(f"  Auto-relabeled: {result.auto_relabeled}")
+    print(f"  Manual review:  {result.manual_review}")
+    print(f"  Errors:         {result.errors}")
+
+    # 변경 상세 출력 (최대 20건)
+    if result.changes:
+        print()
+        print(f"=== Changes detail (showing {min(len(result.changes), 20)}"
+              f"/{len(result.changes)}) ===")
+        for change in result.changes[:20]:
+            action_icon = (
+                "🔄" if change["action"] == "auto_relabel" else "⚠️"
+            )
+            print(
+                f"  {action_icon} {change['posting_id']}: "
+                f"{change['field']} "
+                f"'{change['old']}' → '{change['new']}' "
+                f"(confidence: {change['confidence']:.2f})"
+            )
 
 
 def main():
@@ -165,6 +226,29 @@ def main():
         help="이미 분류된 기업은 건너뜀",
     )
 
+    # relabel (FR-058)
+    relabel_parser = subparsers.add_parser(
+        "relabel", help="Taxonomy 기반 재라벨링"
+    )
+    relabel_parser.add_argument(
+        "--target",
+        choices=["domain", "technology"],
+        default=None,
+        help="재라벨링 대상 (생략 시 전체)",
+    )
+    relabel_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="실제 변경 없이 영향 범위만 확인",
+    )
+    relabel_parser.add_argument(
+        "--limit",
+        "-l",
+        type=int,
+        default=None,
+        help="처리할 최대 건수",
+    )
+
     args = parser.parse_args()
 
     # DB 초기화
@@ -181,6 +265,8 @@ def main():
             cmd_company_export(args)
         elif args.command == "company-import":
             cmd_company_import(args)
+        elif args.command == "relabel":
+            cmd_relabel(args)
     finally:
         db_manager.close()
 
