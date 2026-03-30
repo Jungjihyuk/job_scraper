@@ -5,32 +5,36 @@ services:
     restart: unless-stopped
     ports:
       - "5433:5432"
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: ${DB_USER:-jihyeok}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-jh1234}
-      POSTGRES_DB: ${DB_NAME:-job_scraper_db}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - postgres-data:/var/lib/postgresql
+      - ./label_studio/init_label_studio_db.sh:/docker-entrypoint-initdb.d/02-create-label-studio-db.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-jihyeok} -d ${DB_NAME:-job_scraper_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
   backend:
-    image: ghcr.io/astral-sh/uv:python3.10-bookworm
+    build: .
     container_name: job_scraper_backend
     working_dir: /app
     env_file:
       - .env
     environment:
       DB_HOST: postgres
-      DATABASE_URL: "postgresql+psycopg2://${DB_USER:-jihyeok}:${DB_PASSWORD:-jh1234}@postgres:5432/${DB_NAME:-job_scraper_db}"
+      DATABASE_URL: "postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}"
     volumes:
       - ./backend:/app/backend
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock
       - ./README.md:/app/README.md
+      - ./data:/app/data
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,10 +52,37 @@ services:
     environment:
       CI: "true"
       VITE_API_PROXY_TARGET: http://backend:8000
+    depends_on:
+      - backend
     command: >
       sh -c "corepack enable && pnpm install --force && cd apps/web && pnpm dev --host 0.0.0.0 --port 5173"
     ports:
       - "5173:5173"
 
+  label-studio:
+    image: heartexlabs/label-studio:latest
+    container_name: job_scraper_label_studio
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED: "true"
+      LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: /label-studio/files
+      DJANGO_DB: default
+      POSTGRE_HOST: postgres
+      POSTGRE_PORT: 5432
+      POSTGRE_USER: ${DB_USER}
+      POSTGRE_PASSWORD: ${DB_PASSWORD}
+      POSTGRE_NAME: label_studio_db
+      LABEL_STUDIO_ENABLE_LEGACY_API_TOKEN: "true"
+    volumes:
+      - label-studio-data:/label-studio/data
+      - ./label_studio/datasets:/label-studio/files/labeling_data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+
 volumes:
   postgres-data:
+  label-studio-data:
