@@ -7,10 +7,23 @@ from sqlalchemy import func, cast, Date, extract
 import random
 
 from app.core.database import get_db_session
-from app.models import JobPosting, JobCategory, Location, ExperienceCategory
+from app.models import JobPosting, JobCategory, Location, ExperienceCategory, Company
 from sqlalchemy.dialects.postgresql import JSONB
 
 router = APIRouter(prefix='/api/statistics', tags=['statistics'])
+
+COLORS = [
+    'rgba(99, 102, 241, 0.7)',   # indigo
+    'rgba(245, 158, 11, 0.7)',   # amber
+    'rgba(16, 185, 129, 0.7)',   # emerald
+    'rgba(239, 68, 68, 0.7)',    # red
+    'rgba(139, 92, 246, 0.7)',   # violet
+    'rgba(6, 182, 212, 0.7)',    # cyan
+    'rgba(249, 115, 22, 0.7)',   # orange
+    'rgba(20, 184, 166, 0.7)',   # teal
+    'rgba(236, 72, 153, 0.7)',   # pink
+    'rgba(132, 204, 22, 0.7)',   # lime
+]
 
 @router.get("/specialty_by_location")
 async def get_specialty_by_location(db: Session = Depends(get_db_session)):
@@ -292,6 +305,150 @@ async def get_technology_trends(
             })
 
         return {"labels": months, "datasets": datasets}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/company_type_distribution")
+async def get_company_type_distribution(db: Session = Depends(get_db_session)):
+    """
+    기업 유형별 채용공고 수 분포를 반환합니다.
+    """
+    try:
+        results = (
+            db.query(
+                Company.company_type,
+                func.count(JobPosting.id).label("job_count"),
+            )
+            .join(JobPosting, Company.company_id == JobPosting.company_id)
+            .filter(Company.company_type.is_not(None))
+            .group_by(Company.company_type)
+            .order_by(func.count(JobPosting.id).desc())
+            .all()
+        )
+
+        if not results:
+            return {"labels": [], "datasets": []}
+
+        labels = [r.company_type for r in results]
+        data = [r.job_count for r in results]
+
+        dataset = {
+            "label": "공고 수",
+            "data": data,
+            "backgroundColor": [
+                COLORS[i % len(COLORS)] for i in range(len(labels))
+            ],
+        }
+
+        return {"labels": labels, "datasets": [dataset]}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/domain_by_company_type")
+async def get_domain_by_company_type(db: Session = Depends(get_db_session)):
+    """
+    기업 유형별 도메인 분포 (stacked bar).
+    X축: 기업유형, 각 bar segment: 도메인
+    """
+    try:
+        results = (
+            db.query(
+                Company.company_type,
+                JobPosting.domain_l2,
+                func.count(JobPosting.id).label("job_count"),
+            )
+            .join(JobPosting, Company.company_id == JobPosting.company_id)
+            .filter(
+                Company.company_type.is_not(None),
+                JobPosting.domain_l2.is_not(None),
+            )
+            .group_by(Company.company_type, JobPosting.domain_l2)
+            .all()
+        )
+
+        if not results:
+            return {"labels": [], "datasets": []}
+
+        company_types = sorted(set(r.company_type for r in results))
+        domains = sorted(set(r.domain_l2 for r in results))
+
+        datasets = []
+        for i, domain in enumerate(domains):
+            data = []
+            for ct in company_types:
+                count = next(
+                    (r.job_count for r in results
+                     if r.company_type == ct and r.domain_l2 == domain),
+                    0,
+                )
+                data.append(count)
+            datasets.append({
+                "label": domain,
+                "data": data,
+                "backgroundColor": COLORS[i % len(COLORS)],
+            })
+
+        return {"labels": company_types, "datasets": datasets}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/technology_by_company_type")
+async def get_technology_by_company_type(
+    top_n: int = 10,
+    db: Session = Depends(get_db_session),
+):
+    """
+    기업 유형별 기술 스택 분포 (stacked bar).
+    상위 N개 기술만 표시.
+    """
+    try:
+        from collections import defaultdict
+
+        rows = (
+            db.query(
+                Company.company_type,
+                JobPosting.core_technologies,
+            )
+            .join(JobPosting, Company.company_id == JobPosting.company_id)
+            .filter(
+                Company.company_type.is_not(None),
+                JobPosting.core_technologies.is_not(None),
+            )
+            .all()
+        )
+
+        # {(company_type, tech): count}
+        counts: dict[tuple[str, str], int] = defaultdict(int)
+        tech_totals: dict[str, int] = defaultdict(int)
+        for row in rows:
+            techs = row.core_technologies
+            if not isinstance(techs, list):
+                continue
+            for t in techs:
+                tech_name = t if isinstance(t, str) else str(t)
+                counts[(row.company_type, tech_name)] += 1
+                tech_totals[tech_name] += 1
+
+        if not counts:
+            return {"labels": [], "datasets": []}
+
+        # 상위 N개 기술만
+        top_techs = sorted(tech_totals, key=tech_totals.get, reverse=True)[:top_n]
+        company_types = sorted(set(ct for ct, _ in counts))
+
+        datasets = []
+        for i, tech in enumerate(top_techs):
+            data = [counts.get((ct, tech), 0) for ct in company_types]
+            datasets.append({
+                "label": tech,
+                "data": data,
+                "backgroundColor": COLORS[i % len(COLORS)],
+            })
+
+        return {"labels": company_types, "datasets": datasets}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -26,6 +26,7 @@ async def get_job_postings(
     location: str = None,
     domain: str = None,
     technology: str = None,
+    company_type: str = None,
     include_always_recruiting: bool = True,
     include_expired: bool = False,
     limit: int = 10,
@@ -54,7 +55,9 @@ async def get_job_postings(
             query = query.filter(
                 JobPosting.core_technologies.op('?')(technology)
             )
-        
+        if company_type:
+            query = query.filter(Company.company_type == company_type)
+
         # 상시채용 포함 여부 필터링
         if not include_always_recruiting:
             query = query.filter(JobPosting.is_always_recruiting == False)
@@ -103,6 +106,7 @@ async def get_recent_job_postings(
     exclude_always_recruiting: bool = False,
     domain: str = None,
     technology: str = None,
+    company_type: str = None,
     db: Session = Depends(get_db_session)
 ) -> JobListResponse:
     """최근 등록된 채용 공고 가져오기"""
@@ -123,6 +127,8 @@ async def get_recent_job_postings(
             query = query.filter(
                 JobPosting.core_technologies.op('?')(technology)
             )
+        if company_type:
+            query = query.filter(Company.company_type == company_type)
 
         job_postings = query.order_by(desc(JobPosting.posted_date)).limit(limit).all()
 
@@ -212,6 +218,21 @@ async def get_domains(db: Session = Depends(get_db_session)) -> DomainsResponse:
 
         domain_list = [d[0] for d in domains]
         return DomainsResponse(domains=domain_list)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get('/company_type')
+async def get_company_types(db: Session = Depends(get_db_session)):
+    """모든 기업 유형 목록 조회"""
+    try:
+        types = db.query(Company.company_type)\
+                  .distinct()\
+                  .filter(Company.company_type.is_not(None))\
+                  .order_by(Company.company_type)\
+                  .all()
+
+        return {"company_types": [t[0] for t in types]}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
