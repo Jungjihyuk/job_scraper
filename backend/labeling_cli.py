@@ -2,15 +2,15 @@
 CSV 기반 라벨 Import/Export CLI.
 
 Usage:
-    uv run backend/labeling_cli.py export --output data/unlabeled.csv
-    uv run backend/labeling_cli.py export --output data/unlabeled.csv --limit 500
+    uv run backend/labeling_cli.py export --output label_studio/cli_pipeline/unlabeled.csv
+    uv run backend/labeling_cli.py export --output label_studio/cli_pipeline/unlabeled.csv --limit 500
     uv run backend/labeling_cli.py export --field domain
     uv run backend/labeling_cli.py export --field technology
-    uv run backend/labeling_cli.py export --all --output data/all_postings.csv
+    uv run backend/labeling_cli.py export --all --output label_studio/cli_pipeline/all_postings.csv
 
-    uv run backend/labeling_cli.py import --input data/labeled.csv --dry-run
-    uv run backend/labeling_cli.py import --input data/labeled.csv
-    uv run backend/labeling_cli.py import --input data/labeled.csv --skip-existing
+    uv run backend/labeling_cli.py import --input label_studio/cli_pipeline/labeled.csv --dry-run
+    uv run backend/labeling_cli.py import --input label_studio/cli_pipeline/labeled.csv
+    uv run backend/labeling_cli.py import --input label_studio/cli_pipeline/labeled.csv --skip-existing
 """
 
 import argparse
@@ -65,7 +65,7 @@ def main():
     # export
     export_parser = subparsers.add_parser("export", help="공고 CSV 추출")
     export_parser.add_argument(
-        "--output", "-o", default="data/unlabeled.csv", help="출력 CSV 경로"
+        "--output", "-o", default="label_studio/cli_pipeline/unlabeled.csv", help="출력 CSV 경로"
     )
     export_parser.add_argument(
         "--field",

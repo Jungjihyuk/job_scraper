@@ -16,7 +16,7 @@ from sqlalchemy import text
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-LABELING_DATA_DIR = PROJECT_ROOT / "label_studio" / "datasets"
+LABELING_DATA_DIR = PROJECT_ROOT / "label_studio" / "imports"
 OUTPUT_PATH = Path(__file__).parent / "import_tasks.json"
 
 # 45개 raw 도메인 → 32개 표준 도메인으로 통합

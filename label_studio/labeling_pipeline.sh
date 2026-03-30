@@ -3,17 +3,17 @@
 # labeling_pipeline.sh - Claude Code 기반 자동 라벨링 파이프라인
 #
 # 사용법:
-#   ./scripts/labeling_pipeline.sh                  # 미라벨링 공고만
-#   ./scripts/labeling_pipeline.sh --all            # 전체 공고 재라벨링
-#   ./scripts/labeling_pipeline.sh --batch-size 20  # 청크 크기 조절
-#   ./scripts/labeling_pipeline.sh --dry-run        # DB 반영 없이 미리보기
+#   ./label_studio/labeling_pipeline.sh                  # 미라벨링 공고만
+#   ./label_studio/labeling_pipeline.sh --all            # 전체 공고 재라벨링
+#   ./label_studio/labeling_pipeline.sh --batch-size 20  # 청크 크기 조절
+#   ./label_studio/labeling_pipeline.sh --dry-run        # DB 반영 없이 미리보기
 # =============================================================================
 
 set -eo pipefail
 
 # ── 설정 ──
 BATCH_SIZE=30
-DATA_DIR="data"
+DATA_DIR="label_studio/cli_pipeline"
 CHUNKS_DIR="$DATA_DIR/chunks"
 LABELED_DIR="$DATA_DIR/labeled"
 PROMPT_FILE="$DATA_DIR/LABELING_PROMPT.md"
@@ -30,7 +30,7 @@ while [[ $# -gt 0 ]]; do
         --batch-size) BATCH_SIZE="$2"; shift ;;
         --dry-run) DRY_RUN=true ;;
         -h|--help)
-            echo "Usage: ./scripts/labeling_pipeline.sh [OPTIONS]"
+            echo "Usage: ./label_studio/labeling_pipeline.sh [OPTIONS]"
             echo ""
             echo "Options:"
             echo "  --all            전체 공고 재라벨링 (기존 라벨 포함)"

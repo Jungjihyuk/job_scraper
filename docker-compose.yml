@@ -1,18 +1,36 @@
+# =============================================================================
+# job_scraper 풀스택 Docker Compose
+#
+# 서비스 구성:
+#   postgres      - 공유 PostgreSQL (job_scraper_db + label_studio_db)
+#   backend       - FastAPI 백엔드 API 서버
+#   frontend      - React SPA 개발 서버 (Vite)
+#   label-studio  - 라벨링 검수 UI (자체 DB 없이 postgres 컨테이너 공유)
+#
+# 실행: docker compose up -d
+# =============================================================================
+
 services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL - 공유 데이터베이스 서버
+  # job_scraper_db (backend용)와 label_studio_db (Label Studio용)를 함께 호스팅.
+  # label_studio_db는 init 스크립트(init_label_studio_db.sh)로 최초 기동 시 자동 생성.
+  # ---------------------------------------------------------------------------
   postgres:
     image: postgres:18
     container_name: job_scraper_postgres
     restart: unless-stopped
     ports:
-      - "5433:5432"
+      - "5433:5432"    # 호스트 5433 → 컨테이너 5432 (로컬 postgres와 충돌 방지)
     env_file:
       - .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_DB: ${DB_NAME}           # 기본 DB (job_scraper_db)
     volumes:
       - postgres-data:/var/lib/postgresql
+      # 최초 기동 시 label_studio_db를 자동 생성하는 init 스크립트
       - ./label_studio/init_label_studio_db.sh:/docker-entrypoint-initdb.d/02-create-label-studio-db.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
@@ -20,6 +38,10 @@ services:
       timeout: 5s
       retries: 10
 
+  # ---------------------------------------------------------------------------
+  # Backend - FastAPI + 스크래핑 파이프라인
+  # Dockerfile에서 uv + Playwright(chromium)를 빌드 시 설치.
+  # ---------------------------------------------------------------------------
   backend:
     build: .
     container_name: job_scraper_backend
@@ -34,7 +56,7 @@ services:
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock
       - ./README.md:/app/README.md
-      - ./data:/app/data
+      - ./label_studio:/app/label_studio
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,6 +65,10 @@ services:
     command: >
       sh -c "uv sync && uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
 
+  # ---------------------------------------------------------------------------
+  # Frontend - React SPA (Vite dev server)
+  # backend 컨테이너로 /api, /ws를 프록시.
+  # ---------------------------------------------------------------------------
   frontend:
     image: node:22-bookworm
     container_name: job_scraper_frontend
@@ -59,6 +85,11 @@ services:
     ports:
       - "5173:5173"
 
+  # ---------------------------------------------------------------------------
+  # Label Studio - 라벨링 검수 UI
+  # 자체 DB 서버가 없는 웹 앱이므로 위 postgres 컨테이너의 label_studio_db를 사용.
+  # imports/ 폴더를 읽기 전용으로 마운트하여 CSV 데이터를 로드.
+  # ---------------------------------------------------------------------------
   label-studio:
     image: heartexlabs/label-studio:latest
     container_name: job_scraper_label_studio
@@ -69,19 +100,18 @@ services:
       LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED: "true"
       LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: /label-studio/files
       DJANGO_DB: default
-      POSTGRE_HOST: postgres
+      POSTGRE_HOST: postgres             # postgres 컨테이너를 DB 서버로 사용
       POSTGRE_PORT: 5432
       POSTGRE_USER: ${DB_USER}
       POSTGRE_PASSWORD: ${DB_PASSWORD}
-      POSTGRE_NAME: label_studio_db
+      POSTGRE_NAME: label_studio_db      # init 스크립트로 생성된 별도 DB
       LABEL_STUDIO_ENABLE_LEGACY_API_TOKEN: "true"
     volumes:
       - label-studio-data:/label-studio/data
-      - ./label_studio/datasets:/label-studio/files/labeling_data:ro
+      - ./label_studio/imports:/label-studio/files/labeling_data:ro
     depends_on:
       postgres:
         condition: service_healthy
-
 
 volumes:
   postgres-data:

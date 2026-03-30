@@ -77,9 +77,12 @@ docs/
 # Codex
 .codex
 
-# Labeling data
-data/
-
 # Label Studio
+label_studio/imports/
+label_studio/exports/
+label_studio/cli_pipeline/
 label_studio/scripts/import_tasks.json
 label_studio/scripts/.imported_posting_ids.json
+
+# Analysis outputs
+analysis/outputs/

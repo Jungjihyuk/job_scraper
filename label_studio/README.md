@@ -6,8 +6,9 @@
 
 ```
 label_studio/
-  datasets/            # 라벨링 입력 CSV 데이터
+  imports/             # Label Studio UI에 import할 CSV 데이터
   exports/             # Label Studio 검수 완료 export
+  cli_pipeline/        # CLI 자동 라벨링 파이프라인 작업 디렉토리
   scripts/             # 설정/관리 스크립트
 ```
 
@@ -77,7 +78,7 @@ uv run label_studio/scripts/register_webhook.py
 
 ### A. 기존 CSV 데이터 import (이미 AI 라벨링 완료된 데이터)
 
-`label_studio/datasets/labeling_result_*.csv` 파일이 있는 경우:
+`label_studio/imports/labeling_result_*.csv` 파일이 있는 경우:
 
 ```bash
 # 1. CSV -> Label Studio import용 JSON 변환
