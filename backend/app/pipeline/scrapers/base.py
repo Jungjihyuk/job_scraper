@@ -61,8 +61,21 @@ class Scraper(ABC):
 class WantedScraper(Scraper):
     """Wanted 사이트 스크래퍼"""
 
+    # 직무 → 상위 직군 카테고리 매핑
+    # Wanted.co.kr의 직군 분류 체계 기준
+    JOB_CATEGORY_MAP = {
+        "파이썬 개발자": "개발",
+        "머신러닝 엔지니어": "개발",
+        "데이터 엔지니어": "개발",
+        "서버 개발자": "개발",
+        "빅데이터 엔지니어": "개발",
+        "데이터 사이언티스트": "개발",
+        ".NET 개발자": "개발",
+    }
+
     def __init__(self):
         super().__init__("wanted")
+        self._current_job_category = ""  # build_target_url에서 설정
 
     def get_base_url(self) -> str:
         return "https://www.wanted.co.kr"
@@ -105,6 +118,11 @@ class WantedScraper(Scraper):
         job_id = self.config["job_id_mapping"].get(job_category)
         if not job_id:
             raise ValueError(f"Unsupported job category for Wanted: {job_category}")
+
+        # 현재 직무의 상위 카테고리를 저장 (extract 시 fallback용)
+        self._current_job_category = self.JOB_CATEGORY_MAP.get(
+            job_category, ""
+        )
 
         base_url = os.getenv("WantedScraper").format(job_id=job_id)
         params = self.config["default_params"]
@@ -163,8 +181,11 @@ class WantedScraper(Scraper):
             # URL에서 posting_id 추출 (예: /wd/323478 → 323478)
             posting_id = href.split("/")[-1] if href.startswith("/wd/") else ""
 
-            # job_category 속성 추출
-            job_category = await href_element.get_attribute("data-job-category") or ""
+            # job_category 속성 추출 (HTML 우선, 없으면 config 매핑 fallback)
+            job_category = (
+                await href_element.get_attribute("data-job-category")
+                or self._current_job_category
+            )
 
             # JobPostingData 객체 생성
             return JobPostingData(
