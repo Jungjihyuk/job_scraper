@@ -15,7 +15,6 @@ set -eo pipefail
 BATCH_SIZE=30
 DATA_DIR="label_studio/cli_pipeline"
 CHUNKS_DIR="$DATA_DIR/chunks"
-LABELED_DIR="$DATA_DIR/labeled"
 PROMPT_FILE="$DATA_DIR/LABELING_PROMPT.md"
 FINAL_OUTPUT="$DATA_DIR/labeled.csv"
 MAX_RETRIES=2
@@ -56,8 +55,8 @@ if [[ ! -f "$PROMPT_FILE" ]]; then
 fi
 
 # ── 초기화 ──
-mkdir -p "$CHUNKS_DIR" "$LABELED_DIR"
-rm -f "$CHUNKS_DIR/"*.csv "$LABELED_DIR/"*.csv
+mkdir -p "$CHUNKS_DIR"
+rm -f "$CHUNKS_DIR/"*.csv
 
 # =============================================================================
 # Step 1: Export
