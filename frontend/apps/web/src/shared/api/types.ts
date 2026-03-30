@@ -22,6 +22,7 @@ export type JobPosting = {
   position: string
   job_specialty: string
   company_name: string
+  company_type?: string | null
   location: string
   experience: string
   deadline: string | null
