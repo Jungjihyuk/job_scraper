@@ -56,7 +56,7 @@ def format_detail_html(text_val: str) -> str:
 
 def load_posting_texts_from_db() -> dict[str, dict]:
     """DB에서 posting_id별 텍스트 컬럼 로드."""
-    from backend.core.database import db_manager, init_database
+    from app.core.database import db_manager, init_database
 
     if not init_database():
         print("Warning: DB 연결 실패. 텍스트 필드가 비어있을 수 있습니다.")

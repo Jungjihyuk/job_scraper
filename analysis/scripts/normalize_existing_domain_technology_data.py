@@ -10,10 +10,10 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-from backend.core.database import db_manager, init_database
-from backend.models import JobPosting
-from backend.pipeline.normalizers.content import ContentAnalyzer
-from backend.core.logging import create_development_logger
+from app.core.database import db_manager, init_database
+from app.models import JobPosting
+from app.pipeline.normalizers.content import ContentAnalyzer
+from app.core.logging import create_development_logger
 
 logger = create_development_logger(__name__)
 

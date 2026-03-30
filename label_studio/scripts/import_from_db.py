@@ -21,8 +21,8 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from auth import get_auth_headers, LS_URL, PROJECT_ID
-from backend.core.database import db_manager, init_database
-from backend.core.logging import create_development_logger
+from app.core.database import db_manager, init_database
+from app.core.logging import create_development_logger
 
 logger = create_development_logger(__name__)
 
