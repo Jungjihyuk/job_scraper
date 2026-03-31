@@ -86,3 +86,4 @@ label_studio/scripts/.imported_posting_ids.json
 
 # Analysis outputs
 analysis/outputs/
+analysis/job_matching
