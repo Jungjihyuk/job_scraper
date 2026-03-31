@@ -28,12 +28,21 @@ cd backend && black app/ && isort app/ && flake8 app/
 
 # Tests
 cd backend && pytest tests/
+cd backend && pytest tests/test_foo.py -k "test_name"  # Single test
 
 # DB migrations (Alembic)
 cd backend && uv run alembic revision --autogenerate -m "description"
 cd backend && uv run alembic upgrade head
 cd backend && uv run alembic downgrade -1
 cd backend && uv run alembic current
+
+# Scraper diagnostics
+cd backend && uv run python app/pipeline/diagnostics/diagnose_scraper.py
+cd backend && uv run python app/pipeline/diagnostics/check_selectors.py
+
+# Label Studio scripts
+cd backend && uv run ../label_studio/scripts/import_from_db.py
+cd backend && uv run ../label_studio/scripts/export_annotations.py
 
 # Analysis environment (separate venv)
 cd analysis && uv run jupyter lab
@@ -49,7 +58,9 @@ cd analysis && uv run jupyter lab
 
 **Database**: PostgreSQL on port 5433 (Docker maps 5433→5432). Key models: `JobPosting`, `Company`, `JobCategory`, `Location`, `ExperienceCategory` (in `backend/app/models/job.py`), `ScrapingBatch/Task/URL` (in `backend/app/models/scraping.py`).
 
-**Label Studio** (`label_studio/`): Annotation pipeline for domain/tech labeling. Scripts for import, export, and webhook registration.
+**Label Studio** (`label_studio/`): Annotation pipeline for domain/tech labeling. Scripts for import, export, and webhook registration. Runs on port 8080 in Docker, uses a separate `label_studio_db` in the same PostgreSQL instance.
+
+**Environment**: Requires `.env` file at project root with `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_HOST`, `DB_PORT`. Docker Compose reads this file for all services.
 
 ## Key Conventions
 
@@ -60,6 +71,10 @@ cd analysis && uv run jupyter lab
 - **DB env vars**: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_POOL_SIZE`
 - **Router pattern**: `APIRouter(prefix="/api/{resource}", tags=["{Resource}"])`
 - **Statistics routes** return raw dicts — no Pydantic `response_model`
+- **New routers** must be registered in `backend/app/main.py` via `app.include_router()`
+- **Frontend styling**: Tailwind CSS 3 + PostCSS; charts use recharts
+- **No frontend state management library** — custom hooks + prop drilling
+- **FSD import rule**: app → pages → entities → shared (import only downward, never upward)
 - `JOB_CONFIG` in `backend/app/core/config.py` maps Korean job titles to Wanted.co.kr job IDs
 - `backend/app/` is the Python package root — all `uv` commands run from `backend/`
 
