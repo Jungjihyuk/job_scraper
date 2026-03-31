@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { useDashboardStats } from '../../../entities/dashboard'
-import { useScrapingSocket, startScraping, stopScraping, SCRAPER_TYPES, JOB_OPTIONS } from '../../../entities/scraping'
+import { useScrapingSocket, startScraping, stopScraping, SCRAPER_TYPES, JOB_OPTIONS, SCRAPE_MODES } from '../../../entities/scraping'
 import { LoadingSpinner, ErrorMessage } from '../../../shared/ui'
 
 export function ScrapingPage() {
@@ -8,6 +8,7 @@ export function ScrapingPage() {
   const { messages, isConnected, isScrapingRunning } = useScrapingSocket()
   const [scraperType, setScraperType] = useState<string>(SCRAPER_TYPES[0]?.value ?? 'wanted')
   const [jobOption, setJobOption] = useState<string>(JOB_OPTIONS[0]?.value ?? '파이썬 개발자')
+  const [scrapeMode, setScrapeMode] = useState<string>(SCRAPE_MODES[0]?.value ?? 'default')
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const logEndRef = useRef<HTMLDivElement>(null)
 
@@ -18,7 +19,7 @@ export function ScrapingPage() {
   const handleStart = async () => {
     try {
       setStatusMessage('스크래핑을 시작합니다...')
-      await startScraping({ scraper_type: scraperType, job: jobOption })
+      await startScraping({ scraper_type: scraperType, job: jobOption, scrape_mode: scrapeMode })
     } catch (e) {
       setStatusMessage(e instanceof Error ? e.message : '오류가 발생했습니다')
     }
@@ -72,6 +73,16 @@ export function ScrapingPage() {
             className='rounded border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-400 focus:outline-none'
           >
             {JOB_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <select
+            value={scrapeMode}
+            onChange={(e) => setScrapeMode(e.target.value)}
+            className='rounded border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-400 focus:outline-none'
+            title={SCRAPE_MODES.find((m) => m.value === scrapeMode)?.description}
+          >
+            {SCRAPE_MODES.map(({ value, label }) => (
               <option key={value} value={value}>{label}</option>
             ))}
           </select>

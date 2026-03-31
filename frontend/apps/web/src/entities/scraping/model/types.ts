@@ -1,5 +1,11 @@
 export type ScrapingStatus = { is_scraping: boolean; has_process: boolean }
-export type ScrapingRequest = { scraper_type: string; job: string }
+export type ScrapingRequest = { scraper_type: string; job: string; scrape_mode: string }
+
+export const SCRAPE_MODES = [
+  { value: 'default', label: '기본', description: '설정된 횟수만큼 스크롤' },
+  { value: 'incremental', label: '증분 수집', description: '신규 공고가 없으면 조기 종료' },
+  { value: 'full', label: '전체 수집', description: '페이지 끝까지 스크롤' },
+] as const
 
 export const SCRAPER_TYPES = [
   { value: 'wanted', label: '원티드' },
