@@ -7,33 +7,78 @@ from app.pipeline.stages.content_scraper import ContentScraperStage
 from app.pipeline.stages.normalizer import JobNormalizerStage
 from app.pipeline.stages.database_saver import DatabaseSaverStage
 from app.pipeline.stages.file_saver import LocalFileSaverStage
-from app.pipeline.data_models import PipelineConfig, PipelineMetrics, StageResult
+from app.pipeline.data_models import PipelineConfig, PipelineMetrics, StageResult, JobPostingData
 from app.core.logging import create_development_logger
 
 
 class PipelineManager:
     """🔄 교대 처리용 Pipeline 관리자 - 스크롤-검증 사이클"""
-    
+
     def __init__(self, config: PipelineConfig):
         self.config = config
         self.logger = create_development_logger(__name__)
         self.metrics = PipelineMetrics()
         self.batch_id = None
-        self.status = None 
-        
+        self.status = None
+
         # Stage들 초기화
         self.url_collector = URLCollectorStage()
         self.url_validator = URLValidatorStage(batch_size=config.batch_size)
-        self.content_scraper = ContentScraperStage(config=config, batch_size=config.batch_size)  # 병렬 처리로 배치 크기 증가
+        self.content_scraper = ContentScraperStage(config=config, batch_size=config.batch_size)
         self.job_normalizer = JobNormalizerStage()
         self.database_saver = DatabaseSaverStage() if config.save_to_database else None
         self.local_file_saver = LocalFileSaverStage() if config.save_to_local else None
-        
+
         # 결과 저장 관리
         self.total_validated_count = 0  # 검증된 URL 카운트
         self.total_job_details_count = 0  # 상세정보 스크래핑 카운트
-        
+        self.total_collected_count = 0  # 수집된 URL 카운트
+        self.total_filtered_count = 0  # DB 조기 필터링으로 제외된 카운트
+
+        # DB 조기 필터링용 기존 posting_id 캐시
+        self._existing_posting_ids: set = set()
+
         self.logger.info(f"🔄 Interactive Pipeline initialized for job: {config.job}")
+
+    def _load_existing_posting_ids(self):
+        """DB에서 기존 posting_id 목록을 일괄 로드하여 캐시"""
+        try:
+            from app.core.database import db_manager
+            from app.models import JobPosting
+
+            if not db_manager._initialized:
+                db_manager.initialize()
+
+            with db_manager.get_session() as session:
+                rows = session.query(JobPosting.posting_id).all()
+                self._existing_posting_ids = {row.posting_id for row in rows}
+                self.logger.info(
+                    f"📦 Loaded {len(self._existing_posting_ids)} existing posting IDs from DB"
+                )
+        except Exception as e:
+            self.logger.warning(f"⚠️ Failed to load existing posting IDs: {e}")
+            self._existing_posting_ids = set()
+
+    def _filter_new_postings(
+        self, job_posts: List[JobPostingData]
+    ) -> List[JobPostingData]:
+        """DB에 이미 존재하는 posting_id를 제외하고 신규 공고만 반환"""
+        if not self._existing_posting_ids:
+            return job_posts
+
+        new_posts = [
+            p for p in job_posts
+            if p.posting_id not in self._existing_posting_ids
+        ]
+        filtered = len(job_posts) - len(new_posts)
+        self.total_filtered_count += filtered
+
+        if filtered > 0:
+            self.logger.info(
+                f"🔍 DB 조기 필터링: {len(job_posts)}건 중 {filtered}건 기존, "
+                f"{len(new_posts)}건 신규"
+            )
+        return new_posts
     
     async def run(self, save_callback: Optional[Callable] = None) -> PipelineMetrics:
         """🚀 교대 처리 파이프라인 실행"""
@@ -47,15 +92,27 @@ class PipelineManager:
             self.database_saver.create_batch(batch_name=batch_name, 
                                              scraper_type=self.config.scraper_type)
         
+        mode = self.config.scrape_mode
+        mode_desc = {
+            "default": f"기본 (최대 {self.config.max_scrolls}회 스크롤)",
+            "incremental": "증분 수집 (신규 없으면 조기 종료)",
+            "full": "전체 수집 (페이지 끝까지)",
+        }
         self.logger.info("🚀 Starting Interactive Pipeline execution...")
-        self.logger.info(f"📋 Config: Job={self.config.job}, Max Scrolls={self.config.max_scrolls}")
-        
+        self.logger.info(f"📋 Config: Job={self.config.job}, Mode={mode_desc.get(mode, mode)}")
+
+        # DB 기존 posting_id 로드 (조기 필터링용)
+        if self.config.save_to_database:
+            self._load_existing_posting_ids()
+
         scroll_count = 0
-        
+        low_yield_count = 0  # 신규 비율 10% 미만인 연속 스크롤 횟수
+
         try:
             self.logger.info("🔄 Starting scroll-validate cycle...")
             
-            while scroll_count < self.config.max_scrolls:
+            max_scrolls = self.config.max_scrolls if mode != "full" else 999999
+            while scroll_count < max_scrolls:
                 cycle_start = time.time()
                 self.logger.info(f"🔄 Scroll cycle {scroll_count + 1}/{self.config.max_scrolls}")
                 
@@ -95,8 +152,35 @@ class PipelineManager:
                 if not new_job_posts:
                     self.logger.info("🚦 더 이상 새로운 URL이 없습니다. 파이프라인을 종료합니다.")
                     break
-                
-                                
+
+                collected_before_filter = len(new_job_posts)
+                self.total_collected_count += collected_before_filter
+
+                # [Stage 1.5] DB 조기 필터링 — 이미 수집된 공고 제외
+                new_job_posts = self._filter_new_postings(new_job_posts)
+                new_count = len(new_job_posts)
+
+                # Incremental 모드: 신규 비율 기반 조기 종료
+                if mode == "incremental" and collected_before_filter > 0:
+                    new_ratio = new_count / collected_before_filter
+                    if new_ratio < 0.1:
+                        low_yield_count += 1
+                        self.logger.info(
+                            f"🔍 신규 비율 {new_ratio:.0%} (< 10%) — "
+                            f"low yield 연속 {low_yield_count}회"
+                        )
+                        if low_yield_count >= 2:
+                            self.logger.info(
+                                "⏹️ 연속 2회 low yield → 조기 종료 (Incremental)"
+                            )
+                            break
+                    else:
+                        low_yield_count = 0
+
+                if not new_job_posts:
+                    scroll_count += 1
+                    continue
+
                 # [Stage 2] URL 검증
                 
                 #  validate task 생성 (데이터베이스 저장 시에만)
@@ -247,6 +331,10 @@ class PipelineManager:
                                 if self.database_saver:
                                     try:
                                         await self.database_saver.execute(job_details)
+                                        # 저장 성공한 posting_id를 캐시에 추가
+                                        for detail in job_details:
+                                            if detail.success:
+                                                self._existing_posting_ids.add(detail.job_url.posting_id)
                                         self.logger.info(f"💾 Saved {successful_scrapes} job details to database")
                                     except Exception as e:
                                         self.logger.error(f"❌ Database save (job details) failed: {e}")
@@ -360,13 +448,22 @@ class PipelineManager:
     
     def _log_final_metrics(self):
         """📈 최종 통계 로깅"""
-        self.logger.info("📊 Interactive Pipeline Execution Summary:")
-        self.logger.info(f"   📎 Total URLs Collected: {self.metrics.total_urls_collected}")
+        new_count = self.total_collected_count - self.total_filtered_count
+        efficiency = (
+            f"{new_count}/{self.total_collected_count} "
+            f"({new_count / self.total_collected_count * 100:.0f}%)"
+            if self.total_collected_count > 0
+            else "N/A"
+        )
+
+        self.logger.info("📊 Pipeline Execution Summary:")
+        self.logger.info(f"   📎 URLs Collected: {self.total_collected_count}")
+        self.logger.info(f"   🔍 DB Filtered (duplicates): {self.total_filtered_count}")
+        self.logger.info(f"   🆕 New Postings: {efficiency}")
         self.logger.info(f"   ✅ Valid URLs: {self.metrics.valid_urls}")
         self.logger.info(f"   ❌ Invalid URLs: {self.metrics.invalid_urls}")
+        self.logger.info(f"   📄 Job Details Scraped: {self.total_job_details_count}")
         self.logger.info(f"   ⏱️ Total Execution Time: {self.metrics.total_execution_time:.2f}s")
-        self.logger.info(f"   🎯 Final Results: {self.total_validated_count} total validated URLs")
-        self.logger.info(f"   📄 Job Details Scraped: {self.total_job_details_count} total job details")
     
     async def cleanup(self):
         """🧹 리소스 정리"""
