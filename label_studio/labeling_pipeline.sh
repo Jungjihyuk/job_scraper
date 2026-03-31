@@ -62,7 +62,7 @@ rm -f "$CHUNKS_DIR/"*.csv
 # Step 1: Export
 # =============================================================================
 echo "=== Step 1: DB에서 공고 추출 ==="
-uv run backend/labeling_cli.py export $EXPORT_FLAG --output "$DATA_DIR/unlabeled.csv"
+cd backend && uv run app/labeling_cli.py export $EXPORT_FLAG --output "../$DATA_DIR/unlabeled.csv" && cd ..
 
 TOTAL=$(tail -n +2 "$DATA_DIR/unlabeled.csv" | wc -l | tr -d '[:space:]')
 echo "총 $TOTAL 건"
@@ -178,7 +178,7 @@ if $DRY_RUN; then
     IMPORT_FLAGS="--dry-run"
 fi
 
-uv run backend/labeling_cli.py import --input "$FINAL_OUTPUT" $IMPORT_FLAGS
+cd backend && uv run app/labeling_cli.py import --input "../$FINAL_OUTPUT" $IMPORT_FLAGS && cd ..
 
 # ── 정리 ──
 echo ""
