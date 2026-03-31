@@ -7,3 +7,4 @@ outputs/*.csv
 outputs/*.png
 outputs/*.json
 !outputs/.gitkeep
+cache/
