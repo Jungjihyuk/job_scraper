@@ -87,6 +87,7 @@ class Location(Base):
     location_id = Column(Integer, primary_key=True)
     location = Column(String(100), nullable=False)
     location_detail = Column(String(255))
+    region = Column(String(20))  # 시/도 단위 (서울, 경기, 인천 등)
 
     # Relationships
     job_postings = relationship("JobPosting", back_populates="location")
@@ -95,6 +96,7 @@ class Location(Base):
         UniqueConstraint(
             "location", "location_detail", name="unique_location_combination"
         ),
+        Index("idx_locations_region", "region"),
     )
 
 
@@ -155,6 +157,9 @@ class JobPosting(Base):
     domain_l1 = Column(String(50))  # 산업 도메인 대분류 (IT, 금융, 제조/하드웨어 등)
     domain_l2 = Column(String(100))  # 산업 도메인 중분류 (AI/딥테크, 핀테크 등)
     domain_l3 = Column(String(200))  # 산업 도메인 소분류 (필요 시 메모)
+    specialty_l1 = Column(String(50))  # 직무 대분류 (AI/ML, 백엔드, 데이터, 인프라, 기타)
+    specialty_l2 = Column(String(100))  # 직무 소분류 (AI Agent/LLM, 웹 백엔드 Python 등)
+    employment_type = Column(String(30))  # 고용형태 (정규직, 프리랜서, 인턴, 계약직)
     core_technologies = Column(JSONB)  # 핵심 기술 태그
     taxonomy_version = Column(String(20))  # 분류 기준 버전 (FR-057)
     posted_date = Column(TIMESTAMP)
@@ -177,5 +182,8 @@ class JobPosting(Base):
         Index("idx_job_posting_always_recruiting", "is_always_recruiting"),
         Index("idx_job_posting_domain_l1", "domain_l1"),
         Index("idx_job_posting_domain_l2", "domain_l2"),
+        Index("idx_job_posting_specialty_l1", "specialty_l1"),
+        Index("idx_job_posting_specialty_l2", "specialty_l2"),
+        Index("idx_job_posting_employment_type", "employment_type"),
         Index("idx_job_posting_taxonomy_version", "taxonomy_version"),
     )
