@@ -26,45 +26,68 @@ COLORS = [
 ]
 
 @router.get("/specialty_by_location")
-async def get_specialty_by_location(db: Session = Depends(get_db_session)):
+async def get_specialty_by_location(region: str = None, db: Session = Depends(get_db_session)):
     """
-    지역별 상위 5개 직무 분포 데이터를 반환합니다.
+    지역별 직무 분포 데이터를 반환합니다.
+    - region 미지정: 시/도 단위 요약
+    - region 지정 (예: "서울"): 해당 시/도 내 구/시 단위 상세
     """
     try:
-        # 지역별, 직무별 공고 수 집계
-        subquery = (
+        # 드릴다운 여부에 따라 그룹핑 기준 결정
+        if region:
+            # 특정 시/도 내부: location(구/시) 단위로 집계
+            location_col = Location.location
+            base_filter = [Location.region == region]
+        else:
+            # 전국: region(시/도) 단위로 집계
+            location_col = Location.region
+            base_filter = [Location.region.is_not(None)]
+
+        # 1단계: 지역별 상위 5개 직무를 찾아서 표시할 직무 목록 결정
+        ranked = (
             db.query(
-                Location.location,
-                JobCategory.job_specialty,
+                location_col.label("loc"),
+                JobPosting.specialty_l2,
                 func.count(JobPosting.id).label("job_count"),
                 func.row_number()
                 .over(
-                    partition_by=Location.location,
+                    partition_by=location_col,
                     order_by=func.count(JobPosting.id).desc(),
                 )
                 .label("rank"),
             )
             .join(JobPosting, Location.location_id == JobPosting.location_id)
-            .join(JobCategory, JobCategory.job_category_id == JobPosting.job_category_id)
-            .filter(JobCategory.job_specialty.is_not(None))
-            .group_by(Location.location, JobCategory.job_specialty)
+            .filter(JobPosting.specialty_l2.is_not(None), *base_filter)
+            .group_by(location_col, JobPosting.specialty_l2)
             .subquery()
         )
 
-        results = db.query(
-            subquery.c.location,
-            subquery.c.job_specialty,
-            subquery.c.job_count
-        ).filter(subquery.c.rank <= 5).all()
+        top5_results = db.query(
+            ranked.c.specialty_l2,
+        ).filter(ranked.c.rank <= 5).distinct().all()
 
-        if not results:
-            return {"labels": [], "datasets": []}
+        if not top5_results:
+            return {"labels": [], "datasets": [], "drilldown": region is None}
+
+        top_specialties = sorted(set(r.specialty_l2 for r in top5_results))
+
+        # 2단계: 해당 직무들의 실제 건수를 전체 지역에서 조회
+        all_counts = (
+            db.query(
+                location_col.label("loc"),
+                JobPosting.specialty_l2,
+                func.count(JobPosting.id).label("job_count"),
+            )
+            .join(JobPosting, Location.location_id == JobPosting.location_id)
+            .filter(JobPosting.specialty_l2.in_(top_specialties), *base_filter)
+            .group_by(location_col, JobPosting.specialty_l2)
+            .all()
+        )
 
         # 데이터 가공
-        locations = sorted(list(set([r.location for r in results])))
-        specialties = sorted(list(set([r.job_specialty for r in results])))
-        
-        # 직무별 색상 랜덤 매핑
+        locations = sorted(set(r.loc for r in all_counts))
+        specialties = top_specialties
+
         specialty_colors = {
             spec: f"rgba({random.randint(0, 255)}, {random.randint(0, 255)}, {random.randint(0, 255)}, 0.7)"
             for spec in specialties
@@ -73,17 +96,22 @@ async def get_specialty_by_location(db: Session = Depends(get_db_session)):
         datasets = []
         for specialty in specialties:
             data = []
-            for location in locations:
-                count = next((r.job_count for r in results if r.location == location and r.job_specialty == specialty), 0)
+            for loc in locations:
+                count = next((r.job_count for r in all_counts if r.loc == loc and r.specialty_l2 == specialty), 0)
                 data.append(count)
-            
+
             datasets.append({
                 "label": specialty,
                 "data": data,
                 "backgroundColor": specialty_colors[specialty]
             })
 
-        return {"labels": locations, "datasets": datasets}
+        return {
+            "labels": locations,
+            "datasets": datasets,
+            "drilldown": region is None,
+            "current_region": region,
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -92,19 +120,32 @@ async def get_specialty_by_location(db: Session = Depends(get_db_session)):
 async def get_experience_by_specialty(db: Session = Depends(get_db_session)):
     """
     직무별 경력 분포 데이터를 반환합니다.
+    min_years 기준 구직자 관점 구간: 신입가능, 1~3년, 3~5년, 5~10년, 10년+
     """
     try:
+        from sqlalchemy import case, literal
+
+        # min_years 기준 구간 라벨 매핑 (SQL CASE)
+        exp_bucket = case(
+            (ExperienceCategory.is_fresh_welcome == True, literal("신입 가능")),
+            (ExperienceCategory.min_years == None, literal("미상")),
+            (ExperienceCategory.min_years == 0, literal("신입 가능")),
+            (ExperienceCategory.min_years <= 2, literal("1~2년 이상")),
+            (ExperienceCategory.min_years <= 4, literal("3~4년 이상")),
+            (ExperienceCategory.min_years <= 6, literal("5~6년 이상")),
+            (ExperienceCategory.min_years <= 9, literal("7~9년 이상")),
+            else_=literal("10년 이상"),
+        ).label("exp_bucket")
+
         results = (
             db.query(
-                JobCategory.job_specialty,
-                ExperienceCategory.standardized_experience,
+                JobPosting.specialty_l2,
+                exp_bucket,
                 func.count(JobPosting.id).label("job_count"),
             )
-            .join(JobPosting, JobCategory.job_category_id == JobPosting.job_category_id)
             .outerjoin(ExperienceCategory, JobPosting.experience_category_id == ExperienceCategory.experience_category_id)
-            .filter(JobCategory.job_specialty.is_not(None))
-            .group_by(JobCategory.job_specialty, ExperienceCategory.standardized_experience)
-            .order_by(JobCategory.job_specialty, ExperienceCategory.standardized_experience)
+            .filter(JobPosting.specialty_l2.is_not(None))
+            .group_by(JobPosting.specialty_l2, exp_bucket)
             .all()
         )
 
@@ -112,31 +153,33 @@ async def get_experience_by_specialty(db: Session = Depends(get_db_session)):
             return {"labels": [], "datasets": []}
 
         # 데이터 가공
-        specialties = sorted(list(set([r.job_specialty for r in results])))
-        
-        # None을 '미지정'으로 대체하여 정렬 오류 방지
-        experiences_list = [r.standardized_experience if r.standardized_experience is not None else '미지정' for r in results]
-        experiences = sorted(list(set(experiences_list)))
+        specialties = sorted(set(r.specialty_l2 for r in results))
 
-        # 경력별 색상 랜덤 매핑
+        # 순서 고정
+        bucket_order = ["신입 가능", "1~2년 이상", "3~4년 이상", "5~6년 이상", "7~9년 이상", "10년 이상", "미상"]
+        experiences = [b for b in bucket_order if any(r.exp_bucket == b for r in results)]
+
         experience_colors = {
-            exp: f"rgba({random.randint(0, 255)}, {random.randint(0, 255)}, {random.randint(0, 255)}, 0.7)"
-            for exp in experiences
+            "신입 가능": "rgba(16, 185, 129, 0.7)",
+            "1~2년 이상": "rgba(99, 102, 241, 0.7)",
+            "3~4년 이상": "rgba(245, 158, 11, 0.7)",
+            "5~6년 이상": "rgba(249, 115, 22, 0.7)",
+            "7~9년 이상": "rgba(239, 68, 68, 0.7)",
+            "10년 이상": "rgba(139, 92, 246, 0.7)",
+            "미상": "rgba(148, 163, 184, 0.7)",
         }
 
         datasets = []
         for experience in experiences:
             data = []
             for specialty in specialties:
-                # '미지정'으로 바꾼 None 값을 다시 None으로 바꿔서 쿼리 결과와 매칭
-                lookup_experience = experience if experience != '미지정' else None
-                count = next((r.job_count for r in results if r.job_specialty == specialty and r.standardized_experience == lookup_experience), 0)
+                count = next((r.job_count for r in results if r.specialty_l2 == specialty and r.exp_bucket == experience), 0)
                 data.append(count)
-            
+
             datasets.append({
                 "label": experience,
                 "data": data,
-                "backgroundColor": experience_colors[experience]
+                "backgroundColor": experience_colors.get(experience, "rgba(148, 163, 184, 0.7)")
             })
 
         return {"labels": specialties, "datasets": datasets}
@@ -145,7 +188,7 @@ async def get_experience_by_specialty(db: Session = Depends(get_db_session)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/posting_trends")
-async def get_posting_trends(job_specialty: str = None, year: int = None, db: Session = Depends(get_db_session)):
+async def get_posting_trends(specialty: str = None, year: int = None, db: Session = Depends(get_db_session)):
     """
     시간에 따른 채용 공고 수 추이 데이터를 반환합니다.
     """
@@ -158,9 +201,9 @@ async def get_posting_trends(job_specialty: str = None, year: int = None, db: Se
             .filter(JobPosting.posted_date.is_not(None))
         )
 
-        if job_specialty:
-            query = query.join(JobCategory, JobPosting.job_category_id == JobCategory.job_category_id)                         .filter(JobCategory.job_specialty == job_specialty)
-        
+        if specialty:
+            query = query.filter(JobPosting.specialty_l2 == specialty)
+
         if year:
             query = query.filter(extract('year', JobPosting.posted_date) == year)
 
@@ -177,7 +220,7 @@ async def get_posting_trends(job_specialty: str = None, year: int = None, db: Se
         data = [r.job_count for r in results]
 
         dataset = {
-            "label": job_specialty if job_specialty else "전체",
+            "label": specialty if specialty else "전체",
             "data": data,
             "borderColor": f"rgba({random.randint(0, 255)}, {random.randint(0, 255)}, {random.randint(0, 255)}, 1)",
             "backgroundColor": f"rgba({random.randint(0, 255)}, {random.randint(0, 255)}, {random.randint(0, 255)}, 0.2)",
@@ -395,14 +438,21 @@ async def get_domain_by_company_type(db: Session = Depends(get_db_session)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# 카테고리성 태그 제외 목록 (기술 스택이 아닌 분야/개념명)
+EXCLUDED_TECH_TAGS = {
+    "딥러닝", "머신러닝", "컴퓨터비전", "NLP", "Computer Vision",
+    "Cloud/Infra", "Data Engineering", "데이터엔지니어링", "Search",
+    "시계열", "이상탐지", "강화학습", "생성형 AI", "로보틱스",
+}
+
 @router.get("/technology_by_company_type")
 async def get_technology_by_company_type(
     top_n: int = 10,
     db: Session = Depends(get_db_session),
 ):
     """
-    기업 유형별 기술 스택 분포 (stacked bar).
-    상위 N개 기술만 표시.
+    기업 유형별 기술 스택 분포 (개별 레이더 차트용).
+    각 기업유형별 자체 상위 N개 기술을 비율(%)로 반환.
     """
     try:
         from collections import defaultdict
@@ -420,35 +470,46 @@ async def get_technology_by_company_type(
             .all()
         )
 
-        # {(company_type, tech): count}
-        counts: dict[tuple[str, str], int] = defaultdict(int)
-        tech_totals: dict[str, int] = defaultdict(int)
+        # {company_type: {tech: count}}
+        ct_tech_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        ct_posting_counts: dict[str, int] = defaultdict(int)
+
         for row in rows:
             techs = row.core_technologies
             if not isinstance(techs, list):
                 continue
+            ct_posting_counts[row.company_type] += 1
             for t in techs:
                 tech_name = t if isinstance(t, str) else str(t)
-                counts[(row.company_type, tech_name)] += 1
-                tech_totals[tech_name] += 1
+                if tech_name in EXCLUDED_TECH_TAGS:
+                    continue
+                ct_tech_counts[row.company_type][tech_name] += 1
 
-        if not counts:
-            return {"labels": [], "datasets": []}
+        if not ct_tech_counts:
+            return {"charts": []}
 
-        # 상위 N개 기술만
-        top_techs = sorted(tech_totals, key=tech_totals.get, reverse=True)[:top_n]
-        company_types = sorted(set(ct for ct, _ in counts))
+        # 미분류를 맨 뒤로
+        company_types = sorted(ct_tech_counts.keys(), key=lambda x: (x == '미분류', x))
 
-        datasets = []
-        for i, tech in enumerate(top_techs):
-            data = [counts.get((ct, tech), 0) for ct in company_types]
-            datasets.append({
-                "label": tech,
+        charts = []
+        for i, ct in enumerate(company_types):
+            total = ct_posting_counts.get(ct, 1)
+            tech_counts = ct_tech_counts[ct]
+            top_techs = sorted(tech_counts.items(), key=lambda x: x[1], reverse=True)[:top_n]
+
+            data = [
+                {"subject": tech, "value": round(cnt / total * 100, 1)}
+                for tech, cnt in top_techs
+            ]
+
+            charts.append({
+                "company_type": ct,
+                "posting_count": total,
+                "color": COLORS[i % len(COLORS)],
                 "data": data,
-                "backgroundColor": COLORS[i % len(COLORS)],
             })
 
-        return {"labels": company_types, "datasets": datasets}
+        return {"charts": charts}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

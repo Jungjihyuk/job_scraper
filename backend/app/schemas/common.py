@@ -11,7 +11,9 @@ class JobPostingSchema(BaseModel):
     """채용공고 스키마"""
     id: Optional[int] = None
     position: Optional[str] = None
-    job_specialty: Optional[str] = None
+    specialty_l1: Optional[str] = None
+    specialty_l2: Optional[str] = None
+    employment_type: Optional[str] = None
     company_name: Optional[str] = None
     location: Optional[str] = None
     job_category: Optional[str] = None

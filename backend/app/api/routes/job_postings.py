@@ -21,7 +21,9 @@ router = APIRouter(prefix='/api/job_postings', tags=['job_postings'])
 
 @router.get('/deadline', response_model=JobListResponse)
 async def get_job_postings(
-    job_specialty: str = None,
+    specialty_l1: str = None,
+    specialty_l2: str = None,
+    employment_type: str = None,
     experience: str = None,
     location: str = None,
     domain: str = None,
@@ -42,8 +44,12 @@ async def get_job_postings(
                                     .outerjoin(ExperienceCategory)
 
         # 조건 검색을 위한 필터
-        if job_specialty:
-            query = query.filter(JobCategory.job_specialty == job_specialty)
+        if specialty_l1:
+            query = query.filter(JobPosting.specialty_l1 == specialty_l1)
+        if specialty_l2:
+            query = query.filter(JobPosting.specialty_l2 == specialty_l2)
+        if employment_type:
+            query = query.filter(JobPosting.employment_type == employment_type)
         if experience:
             query = query.filter(ExperienceCategory.standardized_experience == experience)
         if location:
@@ -79,7 +85,9 @@ async def get_job_postings(
         jobs = [
             {
                 "position": job_posting.position,
-                "job_specialty": job_posting.job_category.job_specialty,
+                "specialty_l1": job_posting.specialty_l1,
+                "specialty_l2": job_posting.specialty_l2,
+                "employment_type": job_posting.employment_type,
                 "company_name": job_posting.company.company_name,
                 "company_type": job_posting.company.company_type,
                 "location": job_posting.location.location,
@@ -135,7 +143,9 @@ async def get_recent_job_postings(
         jobs = [
             {
                 "position": job_posting.position,
-                "job_specialty": job_posting.job_category.job_specialty,
+                "specialty_l1": job_posting.specialty_l1,
+                "specialty_l2": job_posting.specialty_l2,
+                "employment_type": job_posting.employment_type,
                 "company_name": job_posting.company.company_name,
                 "company_type": job_posting.company.company_type,
                 "location": job_posting.location.location,
@@ -159,17 +169,20 @@ async def get_recent_job_postings(
     
 @router.get('/job', response_model=JobCategoriesResponse)
 async def get_job_categories(db: Session = Depends(get_db_session)) -> JobCategoriesResponse:
-    """모든 표준 직무 조회 (job_specialty 기반)"""
-    
-    try: 
-        job_specialties = db.query(JobCategory.job_specialty)\
-                           .distinct()\
-                           .filter(JobCategory.job_specialty.is_not(None))\
-                           .all()
-        
-        categories = [specialty[0] for specialty in job_specialties]
+    """모든 직무 분류 조회 (specialty_l1/l2 기반)"""
+
+    try:
+        specialties = (
+            db.query(JobPosting.specialty_l1, JobPosting.specialty_l2)
+            .distinct()
+            .filter(JobPosting.specialty_l2.is_not(None))
+            .order_by(JobPosting.specialty_l1, JobPosting.specialty_l2)
+            .all()
+        )
+
+        categories = [s.specialty_l2 for s in specialties]
         return JobCategoriesResponse(categories=categories)
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
