@@ -24,7 +24,7 @@ export function useDeadlineJobs(filters?: DeadlineFilter): UseDeadlineJobsResult
       }
     }
     void load()
-  }, [filters?.job_specialty, filters?.experience, filters?.location, filters?.include_expired])
+  }, [filters?.specialty_l1, filters?.specialty_l2, filters?.employment_type, filters?.experience, filters?.location, filters?.domain, filters?.technology, filters?.include_expired])
 
   return { jobs, loading, error }
 }

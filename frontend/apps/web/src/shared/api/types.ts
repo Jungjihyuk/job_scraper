@@ -20,8 +20,11 @@ export type DashboardStats = {
 
 export type JobPosting = {
   position: string
-  job_specialty: string
+  specialty_l1?: string | null
+  specialty_l2?: string | null
+  employment_type?: string | null
   company_name: string
+  company_type?: string | null
   location: string
   experience: string
   deadline: string | null
@@ -29,6 +32,9 @@ export type JobPosting = {
   original_url: string | null
   tags: string[] | null
   posted_date?: string | null
+  domain_l1?: string | null
+  domain_l2?: string | null
+  core_technologies?: string[] | null
 }
 
 export type JobListResponse = { jobs: JobPosting[] }
@@ -48,3 +54,7 @@ export type ChartDataset = {
 
 export type ChartResponse = { labels: string[]; datasets: ChartDataset[] }
 export type AvailableYearsResponse = { years: number[] }
+export type DomainsResponse = { domains: string[] }
+export type TechnologiesResponse = { technologies: string[] }
+export type AvailableTechnologiesResponse = { technologies: string[] }
+export type CompanyTypesResponse = { company_types: string[] }

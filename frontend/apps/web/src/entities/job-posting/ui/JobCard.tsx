@@ -23,7 +23,12 @@ function DeadlineBadge({ job }: { job: JobPosting }) {
 }
 
 export function JobCard({ job }: Props) {
-  const tags = Array.isArray(job.tags) ? job.tags : job.tags ? [job.tags] : []
+  const tags = (Array.isArray(job.tags) ? job.tags : job.tags ? [job.tags] : [])
+    .map((t) => (typeof t === 'string' ? t : JSON.stringify(t)))
+    .filter(Boolean)
+  const techs = (Array.isArray(job.core_technologies) ? job.core_technologies : [])
+    .map((t) => (typeof t === 'string' ? t : JSON.stringify(t)))
+    .filter(Boolean)
 
   return (
     <div className='rounded-lg border border-slate-200 bg-white p-4 shadow-sm'>
@@ -44,10 +49,29 @@ export function JobCard({ job }: Props) {
       <div className='mt-2 flex flex-wrap gap-2 text-sm text-slate-600'>
         <span>🏢 {job.company_name || '미상'}</span>
         <span>📍 {job.location || '미상'}</span>
-        <span>🎯 {job.job_specialty || '미분류'}</span>
+        <span>🎯 {job.specialty_l2 || '미분류'}</span>
+        {job.employment_type && job.employment_type !== '정규직' && (
+          <span className='rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-700'>{job.employment_type}</span>
+        )}
         <span>👥 {job.experience || '미상'}</span>
         <DeadlineBadge job={job} />
       </div>
+      {job.domain_l2 && (
+        <div className='mt-2'>
+          <span className='rounded bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700'>
+            {job.domain_l2}
+          </span>
+        </div>
+      )}
+      {techs.length > 0 && (
+        <div className='mt-2 flex flex-wrap gap-1'>
+          {techs.map((tech, i) => (
+            <span key={i} className='rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700'>
+              {tech}
+            </span>
+          ))}
+        </div>
+      )}
       {tags.length > 0 && (
         <div className='mt-2 flex flex-wrap gap-1'>
           {tags.map((tag, i) => (
