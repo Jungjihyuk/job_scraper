@@ -20,7 +20,9 @@ export type DashboardStats = {
 
 export type JobPosting = {
   position: string
-  job_specialty: string
+  specialty_l1?: string | null
+  specialty_l2?: string | null
+  employment_type?: string | null
   company_name: string
   company_type?: string | null
   location: string

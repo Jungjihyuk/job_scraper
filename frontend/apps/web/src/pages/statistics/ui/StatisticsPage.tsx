@@ -11,6 +11,15 @@ import {
   LineChart,
   Line,
   Treemap,
+  ScatterChart,
+  Scatter,
+  ZAxis,
+  Cell,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from 'recharts'
 import {
   useSpecialtyByLocation,
@@ -106,7 +115,8 @@ function TreemapTooltip({ active, payload }: { active?: boolean; payload?: any[]
 }
 
 export function StatisticsPage() {
-  const { data: specialtyData, loading: l1, error: e1 } = useSpecialtyByLocation()
+  const [selectedRegion, setSelectedRegion] = useState<string | undefined>()
+  const { data: specialtyData, drilldown, currentRegion, loading: l1, error: e1 } = useSpecialtyByLocation(selectedRegion)
   const { data: experienceData, loading: l2, error: e2 } = useExperienceBySpecialty()
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('')
   const [selectedYear, setSelectedYear] = useState<number | undefined>()
@@ -127,7 +137,7 @@ export function StatisticsPage() {
   // Domain by company type
   const { data: domainByCtData, loading: l7, error: e7 } = useDomainByCompanyType()
 
-  // Technology by company type (100% horizontal bar)
+  // Technology by company type (radar)
   const { data: techByCtData, loading: l8, error: e8 } = useTechnologyByCompanyType()
 
   // Technology trends
@@ -143,30 +153,96 @@ export function StatisticsPage() {
   return (
     <div className='space-y-10'>
       <section>
-        <h2 className='mb-4 text-xl font-bold text-slate-800'>📊 지역별 직무 분포</h2>
+        <div className='mb-4 flex items-center gap-3'>
+          <h2 className='text-xl font-bold text-slate-800'>📊 지역별 직무 분포</h2>
+          {currentRegion && (
+            <>
+              <span className='rounded bg-blue-100 px-2 py-0.5 text-sm font-medium text-blue-700'>{currentRegion}</span>
+              <button
+                onClick={() => setSelectedRegion(undefined)}
+                className='rounded border border-slate-300 px-2 py-0.5 text-sm text-slate-600 hover:bg-slate-50'
+              >
+                전국으로 돌아가기
+              </button>
+            </>
+          )}
+          {!currentRegion && (
+            <span className='text-sm text-slate-500'>막대를 클릭하면 해당 지역 상세를 볼 수 있습니다</span>
+          )}
+        </div>
         {l1 && <LoadingSpinner />}
         {e1 && <ErrorMessage message={e1} />}
-        {!l1 && !e1 && specialtyData.length === 0 && <EmptyState message='데이터가 없습니다.' />}
-        {!l1 && !e1 && specialtyData.length > 0 && (
-          <ResponsiveContainer width='100%' height={350}>
-            <BarChart data={specialtyData}>
-              <CartesianGrid strokeDasharray='3 3' />
-              <XAxis dataKey='name' />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              {getBarKeys(specialtyData).map((key, i) => (
-                <Bar key={key} dataKey={key} stackId='a' fill={COLORS[i % COLORS.length]} />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+        {!l1 && !e1 && specialtyData.locations.length === 0 && <EmptyState message='데이터가 없습니다.' />}
+        {!l1 && !e1 && specialtyData.locations.length > 0 && (() => {
+          const { locations, specialties, groups } = specialtyData
+          const maxCount = Math.max(...Object.values(groups).flatMap((pts) => pts.map((p) => p.count)), 1)
+          return (
+            <ResponsiveContainer width='100%' height={Math.max(specialties.length * 40 + 80, 350)}>
+              <ScatterChart
+                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                onClick={(e) => {
+                  if (drilldown && e?.activePayload?.[0]?.payload?.location) {
+                    setSelectedRegion(e.activePayload[0].payload.location)
+                  }
+                }}
+                style={drilldown ? { cursor: 'pointer' } : undefined}
+              >
+                <CartesianGrid strokeDasharray='3 3' />
+                <XAxis
+                  type='number'
+                  dataKey='locationIndex'
+                  domain={[-0.5, locations.length - 0.5]}
+                  ticks={locations.map((_, i) => i)}
+                  tickFormatter={(i: number) => locations[i] ?? ''}
+                  interval={0}
+                  angle={-45}
+                  textAnchor='end'
+                  height={80}
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis
+                  type='number'
+                  dataKey='specialtyIndex'
+                  domain={[-0.5, specialties.length - 0.5]}
+                  ticks={specialties.map((_, i) => i)}
+                  tickFormatter={(i: number) => specialties[i] ?? ''}
+                  width={160}
+                  interval={0}
+                />
+                <ZAxis type='number' dataKey='count' range={[40, 1200]} />
+                <Tooltip
+                  content={({ payload }) => {
+                    if (!payload || payload.length === 0) return null
+                    const d = payload[0]?.payload
+                    if (!d) return null
+                    return (
+                      <div className='rounded border border-slate-200 bg-white px-3 py-2 text-sm shadow-lg'>
+                        <p className='font-semibold text-slate-700'>{d.location}</p>
+                        <p className='text-slate-600'>{d.specialty}</p>
+                        <p className='font-medium text-slate-800'>{d.count}건</p>
+                      </div>
+                    )
+                  }}
+                />
+                <Legend />
+                {Object.entries(groups).map(([specialty, points], i) => (
+                  <Scatter key={specialty} name={specialty} data={points} fill={COLORS[i % COLORS.length]}>
+                    {points.map((p, j) => (
+                      <Cell key={j} fillOpacity={0.3 + 0.7 * (p.count / maxCount)} />
+                    ))}
+                  </Scatter>
+                ))}
+              </ScatterChart>
+            </ResponsiveContainer>
+          )
+        })()}
       </section>
 
       <hr className='border-slate-200' />
 
       <section>
         <h2 className='mb-4 text-xl font-bold text-slate-800'>📊 직무별 경력 분포</h2>
+        <p className='mb-3 text-sm text-slate-500'>최소 지원 경력(min_years) 기준으로 구간을 나눈 비율입니다</p>
         {l2 && <LoadingSpinner />}
         {e2 && <ErrorMessage message={e2} />}
         {!l2 && !e2 && experienceData.length === 0 && <EmptyState message='데이터가 없습니다.' />}
@@ -174,8 +250,8 @@ export function StatisticsPage() {
           <ResponsiveContainer width='100%' height={400}>
             <BarChart data={experienceData} layout='vertical'>
               <CartesianGrid strokeDasharray='3 3' />
-              <XAxis type='number' unit='%' />
-              <YAxis dataKey='name' type='category' width={120} />
+              <XAxis type='number' unit='%' domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
+              <YAxis dataKey='name' type='category' width={160} />
               <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} />
               <Legend />
               {getBarKeys(experienceData).map((key, i) => (
@@ -299,24 +375,35 @@ export function StatisticsPage() {
       <hr className='border-slate-200' />
 
       <section>
-        <h2 className='mb-4 text-xl font-bold text-slate-800'>🏢 기업 유형별 기술 스택 비율</h2>
-        <p className='mb-3 text-sm text-slate-500'>상위 10개 기술 · 기업유형별 100% 비율 비교</p>
+        <h2 className='mb-4 text-xl font-bold text-slate-800'>🏢 기업 유형별 기술 스택</h2>
+        <p className='mb-3 text-sm text-slate-500'>각 기업유형별 상위 10개 기술 · 공고 중 언급 비율(%) (카테고리성 태그 제외)</p>
         {l8 && <LoadingSpinner />}
         {e8 && <ErrorMessage message={e8} />}
         {!l8 && !e8 && techByCtData.length === 0 && <EmptyState message='데이터가 없습니다.' />}
         {!l8 && !e8 && techByCtData.length > 0 && (
-          <ResponsiveContainer width='100%' height={Math.max(techByCtData.length * 50, 300)}>
-            <BarChart data={techByCtData} layout='vertical'>
-              <CartesianGrid strokeDasharray='3 3' />
-              <XAxis type='number' unit='%' domain={[0, 100]} />
-              <YAxis dataKey='name' type='category' width={90} tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} />
-              <Legend />
-              {getBarKeys(techByCtData).map((key, i) => (
-                <Bar key={key} dataKey={key} stackId='a' fill={COLORS[i % COLORS.length]} />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
+          <div className='grid grid-cols-2 gap-4 lg:grid-cols-3'>
+            {techByCtData.map((chart) => (
+              <div key={chart.company_type} className='rounded-lg border border-slate-200 bg-white p-3'>
+                <h3 className='mb-1 text-center text-sm font-semibold text-slate-700'>{chart.company_type}</h3>
+                <p className='mb-2 text-center text-xs text-slate-400'>{chart.posting_count}건</p>
+                <ResponsiveContainer width='100%' height={280}>
+                  <RadarChart data={chart.data} cx='50%' cy='50%' outerRadius='65%'>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey='subject' tick={{ fontSize: 9 }} />
+                    <PolarRadiusAxis tick={{ fontSize: 8 }} angle={90} />
+                    <Radar
+                      name={chart.company_type}
+                      dataKey='value'
+                      stroke={chart.color}
+                      fill={chart.color}
+                      fillOpacity={0.3}
+                    />
+                    <Tooltip formatter={(v: number) => `${v}%`} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            ))}
+          </div>
         )}
       </section>
 

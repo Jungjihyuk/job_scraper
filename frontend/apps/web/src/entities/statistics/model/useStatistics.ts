@@ -11,22 +11,40 @@ import {
   fetchDomainByCompanyType,
   fetchTechnologyByCompanyType,
 } from '../api/statisticsApi'
-import { transformStackedBar, transformHorizontalBar, transformLineChart, transformTreemap } from '../lib/transforms'
-import type { TreemapNode } from '../lib/transforms'
+import { transformStackedBar, transformHorizontalBar, transformLineChart, transformTreemap, transformBubble } from '../lib/transforms'
+import type { TreemapNode, BubbleDatum } from '../lib/transforms'
+import type { TechRadarChart } from '../api/statisticsApi'
 import type { StackedBarData, LineChartData } from './types'
 
 type ChartHookResult<T> = { data: T; loading: boolean; error: string | null }
 
-export function useSpecialtyByLocation(): ChartHookResult<StackedBarData> {
-  const [data, setData] = useState<StackedBarData>([])
+type BubbleData = {
+  locations: string[]
+  specialties: string[]
+  groups: Record<string, BubbleDatum[]>
+}
+
+const emptyBubble: BubbleData = { locations: [], specialties: [], groups: {} }
+
+export function useSpecialtyByLocation(region?: string): ChartHookResult<BubbleData> & {
+  drilldown: boolean
+  currentRegion: string | null
+} {
+  const [data, setData] = useState<BubbleData>(emptyBubble)
+  const [drilldown, setDrilldown] = useState(true)
+  const [currentRegion, setCurrentRegion] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true)
+      setError(null)
       try {
-        const raw = await fetchSpecialtyByLocation()
-        setData(transformStackedBar(raw))
+        const raw = await fetchSpecialtyByLocation({ region })
+        setData(transformBubble(raw))
+        setDrilldown(raw.drilldown ?? true)
+        setCurrentRegion(raw.current_region ?? null)
       } catch (e) {
         setError(e instanceof Error ? e.message : '알 수 없는 오류')
       } finally {
@@ -34,9 +52,9 @@ export function useSpecialtyByLocation(): ChartHookResult<StackedBarData> {
       }
     }
     void load()
-  }, [])
+  }, [region])
 
-  return { data, loading, error }
+  return { data, drilldown, currentRegion, loading, error }
 }
 
 export function useExperienceBySpecialty(): ChartHookResult<StackedBarData> {
@@ -76,7 +94,7 @@ export function usePostingTrends(
       setError(null)
       try {
         const [trendsRaw, yearsData] = await Promise.all([
-          fetchPostingTrends({ job_specialty: specialty, year }),
+          fetchPostingTrends({ specialty, year }),
           fetchAvailableYears(),
         ])
         setData(transformLineChart(trendsRaw))
@@ -159,8 +177,8 @@ export function useDomainByCompanyType(): ChartHookResult<TreemapNode[]> {
   return { data, loading, error }
 }
 
-export function useTechnologyByCompanyType(): ChartHookResult<StackedBarData> {
-  const [data, setData] = useState<StackedBarData>([])
+export function useTechnologyByCompanyType(): ChartHookResult<TechRadarChart[]> {
+  const [data, setData] = useState<TechRadarChart[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -168,7 +186,7 @@ export function useTechnologyByCompanyType(): ChartHookResult<StackedBarData> {
     const load = async () => {
       try {
         const raw = await fetchTechnologyByCompanyType()
-        setData(transformHorizontalBar(raw))
+        setData(raw.charts)
       } catch (e) {
         setError(e instanceof Error ? e.message : '알 수 없는 오류')
       } finally {

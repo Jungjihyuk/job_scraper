@@ -82,6 +82,48 @@ export function transformRadar(data: ChartResponse): RadarDatum[] {
   })
 }
 
+export type BubbleDatum = {
+  location: string
+  locationIndex: number
+  specialty: string
+  specialtyIndex: number
+  count: number
+}
+
+/**
+ * ChartResponse → 버블차트 데이터.
+ * 직무별로 그룹핑하여 ScatterChart의 여러 Scatter로 렌더링.
+ */
+export function transformBubble(data: ChartResponse): {
+  locations: string[]
+  specialties: string[]
+  groups: Record<string, BubbleDatum[]>
+} {
+  const locations = data.labels
+  const specialties = data.datasets.map((ds) => ds.label)
+  const groups: Record<string, BubbleDatum[]> = {}
+
+  data.datasets.forEach((ds, sIdx) => {
+    const points: BubbleDatum[] = []
+    ds.data.forEach((count, lIdx) => {
+      if (count > 0) {
+        points.push({
+          location: locations[lIdx],
+          locationIndex: lIdx,
+          specialty: ds.label,
+          specialtyIndex: sIdx,
+          count,
+        })
+      }
+    })
+    if (points.length > 0) {
+      groups[ds.label] = points
+    }
+  })
+
+  return { locations, specialties, groups }
+}
+
 export function transformLineChart(data: ChartResponse): LineChartData {
   const dataset = data.datasets[0]
   if (!dataset) return []
