@@ -4,7 +4,9 @@ import type { DeadlineFilter } from '../model/types'
 
 export async function fetchDeadlineJobs(filters?: DeadlineFilter): Promise<JobListResponse> {
   return getJson<JobListResponse>('/api/job_postings/deadline', {
-    job_specialty: filters?.job_specialty,
+    specialty_l1: filters?.specialty_l1,
+    specialty_l2: filters?.specialty_l2,
+    employment_type: filters?.employment_type,
     experience: filters?.experience,
     location: filters?.location,
     domain: filters?.domain,

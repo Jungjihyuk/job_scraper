@@ -5,7 +5,7 @@ import { LoadingSpinner, ErrorMessage, EmptyState } from '../../../shared/ui'
 
 export function DeadlinePage() {
   const [pendingFilters, setPendingFilters] = useState<DeadlineFilter>({
-    job_specialty: '',
+    specialty_l2: '',
     experience: '',
     location: '',
     domain: '',
@@ -20,7 +20,7 @@ export function DeadlinePage() {
 
   const applyFilters = () => {
     setAppliedFilters({
-      job_specialty: pendingFilters.job_specialty || undefined,
+      specialty_l2: pendingFilters.specialty_l2 || undefined,
       experience: pendingFilters.experience || undefined,
       location: pendingFilters.location || undefined,
       domain: pendingFilters.domain || undefined,
@@ -39,8 +39,8 @@ export function DeadlinePage() {
           <div className='flex items-center gap-2'>
             <label className='text-sm font-medium text-slate-600'>직무</label>
             <select
-              value={pendingFilters.job_specialty ?? ''}
-              onChange={(e) => setPendingFilters((prev) => ({ ...prev, job_specialty: e.target.value }))}
+              value={pendingFilters.specialty_l2 ?? ''}
+              onChange={(e) => setPendingFilters((prev) => ({ ...prev, specialty_l2: e.target.value }))}
               disabled={optionsLoading}
               className='rounded border border-slate-300 px-2 py-1 text-sm focus:border-blue-400 focus:outline-none'
             >
