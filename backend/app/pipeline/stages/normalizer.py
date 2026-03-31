@@ -210,7 +210,8 @@ class JobNormalizerStage(BaseStage):
         if not body_text.strip():
             return job_details
 
-        result = self.content_analyzer.analyze(body_text)
+        position = job_details.job_url.position or ""
+        result = self.content_analyzer.analyze(body_text, position=position)
 
         if result.domain:
             job_details.job_description["domain"] = result.domain
@@ -218,10 +219,18 @@ class JobNormalizerStage(BaseStage):
             job_details.job_description["core_technologies"] = result.core_technologies
         if result.taxonomy_version:
             job_details.job_description["taxonomy_version"] = result.taxonomy_version
+        if result.specialty_l1:
+            job_details.job_description["specialty_l1"] = result.specialty_l1
+        if result.specialty_l2:
+            job_details.job_description["specialty_l2"] = result.specialty_l2
+        if result.employment_type:
+            job_details.job_description["employment_type"] = result.employment_type
 
         self.logger.debug(
             f"Content analysis: domain={result.domain}, "
-            f"technologies={result.core_technologies}"
+            f"technologies={result.core_technologies}, "
+            f"specialty={result.specialty_l1}/{result.specialty_l2}, "
+            f"employment={result.employment_type}"
         )
 
         return job_details

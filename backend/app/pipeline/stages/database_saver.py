@@ -365,6 +365,9 @@ class DatabaseSaverStage(BaseStage):
                             deadline=deadline_date,
                             is_always_recruiting=is_always_recruiting,
                             domain_l2=job_details.job_description.get("domain"),
+                            specialty_l1=job_details.job_description.get("specialty_l1"),
+                            specialty_l2=job_details.job_description.get("specialty_l2"),
+                            employment_type=job_details.job_description.get("employment_type"),
                             core_technologies=job_details.job_description.get("core_technologies"),
                             posted_date=job_details.posted_date,
                         )
@@ -529,8 +532,11 @@ class DatabaseSaverStage(BaseStage):
         )
 
         if not location:
+            region = location_name.split(" ", 1)[0] if location_name else None
             location = Location(
-                location=location_name, location_detail=location_detail_name
+                location=location_name,
+                location_detail=location_detail_name,
+                region=region,
             )
             session.add(location)
             session.commit()

@@ -1,9 +1,12 @@
 """
-Content analysis for domain and core technology extraction from job postings.
+Content analysis for domain, core technology, and job specialty extraction from job postings.
 """
 import re
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
+
+import yaml
 
 
 @dataclass
@@ -12,6 +15,9 @@ class ContentAnalysisResult:
     domain: Optional[str] = None
     domain_confidence: float = 0.0
     core_technologies: List[str] = field(default_factory=list)
+    specialty_l1: Optional[str] = None
+    specialty_l2: Optional[str] = None
+    employment_type: Optional[str] = None
     analysis_method: str = "keyword_match"
     taxonomy_version: Optional[str] = None
 
@@ -126,6 +132,25 @@ class ContentAnalyzer:
         ],
     }
 
+    EMPLOYMENT_PATTERNS = {
+        "프리랜서": [
+            re.compile(r"\[프리랜서\]", re.IGNORECASE),
+            re.compile(r"\[프리\]", re.IGNORECASE),
+            re.compile(r"프리랜서", re.IGNORECASE),
+            re.compile(r"freelance", re.IGNORECASE),
+        ],
+        "인턴": [
+            re.compile(r"\[인턴\]", re.IGNORECASE),
+            re.compile(r"인턴십", re.IGNORECASE),
+            re.compile(r"intern", re.IGNORECASE),
+        ],
+        "계약직": [
+            re.compile(r"계약직", re.IGNORECASE),
+            re.compile(r"기간제", re.IGNORECASE),
+            re.compile(r"contract", re.IGNORECASE),
+        ],
+    }
+
     def __init__(self):
         """ContentAnalyzer 초기화. TaxonomyManager가 있으면 버전을 추적."""
         self._taxonomy_version = None
@@ -135,19 +160,100 @@ class ContentAnalyzer:
             self._taxonomy_version = mgr.get_version("domain")
         except Exception:
             pass
+        self._specialty_rules = self._load_specialty_taxonomy()
 
-    def analyze(self, body_text: str) -> ContentAnalysisResult:
+    def _load_specialty_taxonomy(self) -> Dict:
+        """job_specialty.yaml에서 키워드 규칙을 로드"""
+        yaml_path = (
+            Path(__file__).resolve().parents[4]
+            / "label_studio" / "taxonomy" / "job_specialty.yaml"
+        )
+        if not yaml_path.exists():
+            return {}
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
+
+    # 가중치 상수
+    STRONG_WEIGHT = 3
+    NORMAL_WEIGHT = 1
+    TITLE_MULTIPLIER = 2
+
+    def classify_specialty(
+        self, position: str, body_text: str
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
-        본문 텍스트에서 도메인과 핵심 기술을 추출
+        position(제목)과 본문으로 직무 대분류(l1)/소분류(l2)를 결정.
+
+        가중치 규칙:
+          - strong_keywords 매치: 3점
+          - keywords 매치: 1점
+          - 제목에서 매치된 키워드: 점수 2배
+        """
+        if not self._specialty_rules:
+            return None, None
+
+        categories = self._specialty_rules.get("categories", {})
+        title_lower = position.lower()
+        body_lower = body_text.lower()
+
+        best_l1 = None
+        best_l2 = None
+        best_score = 0.0
+
+        for l1_name, l1_data in categories.items():
+            subcategories = l1_data.get("subcategories", {})
+            for l2_name, l2_data in subcategories.items():
+                score = 0.0
+
+                for kw in l2_data.get("strong_keywords", []):
+                    kw_lower = kw.lower()
+                    if kw_lower in title_lower:
+                        score += self.STRONG_WEIGHT * self.TITLE_MULTIPLIER
+                    elif kw_lower in body_lower:
+                        score += self.STRONG_WEIGHT
+
+                for kw in l2_data.get("keywords", []):
+                    kw_lower = kw.lower()
+                    if kw_lower in title_lower:
+                        score += self.NORMAL_WEIGHT * self.TITLE_MULTIPLIER
+                    elif kw_lower in body_lower:
+                        score += self.NORMAL_WEIGHT
+
+                if score > best_score:
+                    best_score = score
+                    best_l1 = l1_name
+                    best_l2 = l2_name
+
+        # 최소 임계값: strong 1개(3점) 이상이거나 일반 3개(3점) 이상
+        if best_score >= 3:
+            return best_l1, best_l2
+        return None, None
+
+    def classify_employment_type(self, position: str) -> str:
+        """position(제목)에서 고용형태를 추출. 기본값은 '정규직'."""
+        for emp_type, patterns in self.EMPLOYMENT_PATTERNS.items():
+            for pattern in patterns:
+                if pattern.search(position):
+                    return emp_type
+        return "정규직"
+
+    def analyze(
+        self, body_text: str, position: str = ""
+    ) -> ContentAnalysisResult:
+        """
+        본문 텍스트에서 도메인, 핵심 기술, 직무 분류, 고용형태를 추출
 
         Args:
             body_text: 채용공고 본문 텍스트 (main_tasks + requirements + preferred 등)
+            position: 채용공고 제목 (직무/고용형태 분류에 사용)
 
         Returns:
             ContentAnalysisResult: 분석 결과
         """
         if not body_text or not body_text.strip():
-            return ContentAnalysisResult()
+            return ContentAnalysisResult(
+                employment_type=self.classify_employment_type(position) if position else None,
+            )
 
         lower_text = body_text.lower()
 
@@ -173,10 +279,19 @@ class ContentAnalyzer:
                     core_technologies.append(tech_name)
                     break
 
+        # 직무 분류 (specialty)
+        specialty_l1, specialty_l2 = self.classify_specialty(position, body_text)
+
+        # 고용형태
+        employment_type = self.classify_employment_type(position)
+
         return ContentAnalysisResult(
             domain=domain,
             domain_confidence=domain_confidence,
             core_technologies=core_technologies,
+            specialty_l1=specialty_l1,
+            specialty_l2=specialty_l2,
+            employment_type=employment_type,
             analysis_method="keyword_match",
             taxonomy_version=self._taxonomy_version,
         )
