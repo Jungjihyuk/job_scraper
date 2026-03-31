@@ -39,7 +39,7 @@
 
 ### Taxonomy 관리
 
-- YAML 기반 분류 체계 관리 (도메인 / 핵심 기술 / 기업 유형)
+- YAML 기반 분류 체계 관리 (도메인 / 핵심 기술 / 기업 유형 / 직무 특성)
 - 버전 관리 및 변경 이력 추적 (`CHANGELOG.md`)
 - Taxonomy 변경 시 기존 데이터 자동 재라벨링 파이프라인
 
@@ -77,7 +77,7 @@ job_scraper/
 │   ├── datasets/            #   라벨링 입력 CSV
 │   ├── exports/             #   검수 완료 export
 │   ├── scripts/             #   import/export/설정 스크립트
-│   └── taxonomy/            #   분류 체계 YAML (도메인/기술/기업유형)
+│   └── taxonomy/            #   분류 체계 YAML (도메인/기술/기업유형/직무특성)
 ├── analysis/                # 데이터 분석 (Jupyter, 별도 pyproject.toml)
 │   ├── notebooks/           #   분석 노트북
 │   ├── scripts/             #   데이터 처리 스크립트
@@ -188,7 +188,9 @@ backend/app/alembic/
 └── versions/
     ├── 0001_baseline_existing_schema.py
     ├── 0002_add_company_classification_columns.py
-    └── 0003_add_taxonomy_version_columns.py
+    ├── 0003_add_taxonomy_version_columns.py
+    ├── 927955153611_add_specialty_l1_specialty_l2_.py
+    └── 5426883d0c04_add_region_column_to_locations.py
 ```
 
 ### 마이그레이션 작성 규칙
@@ -202,13 +204,13 @@ backend/app/alembic/
 
 | 테이블 | 설명 |
 |--------|------|
-| `job_posting` | 채용 공고 (도메인, 핵심 기술, taxonomy 버전 포함) |
+| `job_posting` | 채용 공고 (도메인, 핵심 기술, specialty_l1/l2, taxonomy 버전 포함) |
 | `companies` | 회사 정보 (유형 분류, Blind 평점) |
 | `experience_categories` | 경력 정규화 매핑 |
 | `scraping_batches` | 스크래핑 실행 배치 |
 | `scraping_tasks` | 스테이지별 작업 |
 | `job_categories` | 직무 분류 |
-| `locations` | 근무 지역 |
+| `locations` | 근무 지역 (region 시/도 단위 포함) |
 | `scraped_urls` | 수집된 URL |
 | `domain_review_staging` | 도메인 라벨링 검수 데이터 |
 | `core_tech_review_staging` | 기술 라벨링 검수 데이터 |
