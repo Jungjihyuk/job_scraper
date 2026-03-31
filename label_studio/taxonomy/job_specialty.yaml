@@ -1,0 +1,409 @@
+# 직무 분류 체계 (Job Specialty Taxonomy)
+# Version: 1.1.0
+# Last Updated: 2026-03-31
+# 근거: analysis/notebooks/job_specialty.ipynb 클러스터링 분석 + 도메인 지식
+#
+# 키워드 가중치 규칙:
+#   strong_keywords: 해당 직무의 강한 신호 (3점) — 이 키워드가 있으면 거의 확실
+#   keywords: 일반 신호 (1점) — 다른 직무에서도 나타날 수 있음
+#   제목(position)에서 매치된 키워드는 가중치 2배
+
+version: "1.1.0"
+
+categories:
+  AI/ML:
+    description: "인공지능, 머신러닝 연구 및 엔지니어링 직무"
+    subcategories:
+      AI Agent/LLM 엔지니어링:
+        description: "LLM 기반 에이전트, RAG, 프롬프트 엔지니어링 중심"
+        strong_keywords:
+          - "langchain"
+          - "langgraph"
+          - "crewai"
+          - "ai agent"
+          - "rag"
+          - "function calling"
+          - "tool use"
+          - "파인튜닝"
+          - "fine-tuning"
+          - "프롬프트 엔지니어링"
+        keywords:
+          - "llm"
+          - "prompt"
+          - "agent"
+          - "챗봇"
+          - "생성형"
+          - "gpt"
+        inclusion_criteria:
+          - "LLM/생성형 AI 기반 서비스 개발"
+          - "AI Agent 설계 및 구현"
+          - "RAG 파이프라인 구축"
+          - "프롬프트 엔지니어링 및 최적화"
+        exclusion_criteria:
+          - "AI를 단순 도구로만 활용 (→ AI Native Builder)"
+          - "전통 ML 모델 연구 (→ ML Research)"
+
+      ML Research:
+        description: "CV, NLP, 강화학습, 로보틱스 등 ML 모델 연구/개발"
+        strong_keywords:
+          - "computer vision"
+          - "강화학습"
+          - "reinforcement learning"
+          - "slam"
+          - "자율주행"
+          - "로보틱스"
+          - "robotics"
+          - "object detection"
+          - "segmentation"
+          - "diffusion"
+          - "deep learning"
+          - "딥러닝"
+        keywords:
+          - "cv"
+          - "nlp"
+          - "자연어처리"
+          - "영상처리"
+          - "이미지"
+          - "객체 탐지"
+          - "transformer"
+          - "논문"
+          - "research"
+        inclusion_criteria:
+          - "ML/DL 모델 설계, 학습, 평가"
+          - "CV/NLP/음성 등 특정 분야 연구"
+          - "자율주행/로보틱스 알고리즘 개발"
+          - "논문 재현 및 모델 개선"
+        exclusion_criteria:
+          - "모델 서빙/배포만 담당 (→ MLOps)"
+          - "LLM API 활용 중심 (→ AI Agent/LLM)"
+
+      AI Native Builder:
+        description: "AI 도구를 활용한 서비스 개발 (연구보다 활용 중심)"
+        strong_keywords:
+          - "ai native"
+          - "ai product"
+          - "ai 제품"
+        keywords:
+          - "ai 활용"
+          - "copilot"
+          - "ai 서비스"
+        inclusion_criteria:
+          - "AI API/SDK를 활용한 제품 개발"
+          - "AI 기능이 포함된 서비스의 풀스택 개발"
+          - "모델 학습보다 AI 통합/활용이 주업무"
+        exclusion_criteria:
+          - "모델 직접 학습/연구 (→ ML Research)"
+          - "LLM Agent 아키텍처 설계 (→ AI Agent/LLM)"
+        edge_cases:
+          - case: "AI 기능이 있는 풀스택 개발자"
+            resolution: "AI가 핵심 역할이면 AI Native Builder, 부가 기능이면 백엔드/풀스택"
+
+      MLOps:
+        description: "ML 모델 배포, 파이프라인 운영, 모델 모니터링"
+        strong_keywords:
+          - "mlops"
+          - "모델 서빙"
+          - "model serving"
+          - "kubeflow"
+          - "mlflow"
+          - "feature store"
+          - "triton"
+          - "bentoml"
+        keywords:
+          - "모델 배포"
+          - "ml pipeline"
+          - "gpu 최적화"
+          - "sagemaker"
+        inclusion_criteria:
+          - "ML 모델 배포/서빙 인프라 구축"
+          - "학습 파이프라인 자동화"
+          - "모델 성능 모니터링 및 재학습"
+        exclusion_criteria:
+          - "일반 DevOps/인프라 (→ 인프라/DevOps/SRE)"
+          - "모델 연구/학습 (→ ML Research)"
+
+  백엔드:
+    description: "서버 사이드 개발, API 설계, 시스템 프로그래밍"
+    subcategories:
+      웹 백엔드 (Python):
+        description: "Python 기반 웹 서버/API 개발"
+        strong_keywords:
+          - "django"
+          - "fastapi"
+          - "flask"
+          - "drf"
+          - "django rest"
+        keywords:
+          - "celery"
+          - "python 백엔드"
+        inclusion_criteria:
+          - "Django/FastAPI/Flask 기반 서비스 개발"
+          - "Python이 주력 서버 언어"
+        exclusion_criteria:
+          - "Python이지만 데이터 파이프라인 중심 (→ 데이터 엔지니어)"
+          - "Python이지만 ML 모델 개발 (→ AI/ML)"
+
+      웹 백엔드 (Java/Kotlin):
+        description: "Java/Kotlin 기반 웹 서버/API 개발"
+        strong_keywords:
+          - "spring"
+          - "spring boot"
+          - "jpa"
+          - "hibernate"
+          - "mybatis"
+        keywords:
+          - "java"
+          - "kotlin"
+          - "gradle"
+          - "maven"
+          - "tomcat"
+        inclusion_criteria:
+          - "Spring/Spring Boot 기반 서비스 개발"
+          - "Java/Kotlin이 주력 서버 언어"
+
+      웹 백엔드 (Node/TS):
+        description: "Node.js/TypeScript 기반 웹 서버/API 개발"
+        strong_keywords:
+          - "nestjs"
+          - "express"
+          - "prisma"
+          - "typeorm"
+        keywords:
+          - "node.js"
+          - "typescript"
+          - "graphql"
+        inclusion_criteria:
+          - "NestJS/Express 기반 서비스 개발"
+          - "Node.js/TypeScript가 주력 서버 언어"
+
+      시스템/임베디드:
+        description: "시스템 소프트웨어, 임베디드, 펌웨어 개발"
+        strong_keywords:
+          - "embedded"
+          - "임베디드"
+          - "firmware"
+          - "펌웨어"
+          - "linux kernel"
+          - "디바이스 드라이버"
+          - "rtos"
+        keywords:
+          - "시스템 sw"
+          - "c/c++"
+          - "네트워크 프로그래밍"
+          - "프로토콜"
+        inclusion_criteria:
+          - "임베디드/펌웨어 소프트웨어 개발"
+          - "시스템 레벨 C/C++ 프로그래밍"
+          - "디바이스 드라이버/커널 모듈 개발"
+        exclusion_criteria:
+          - "임베디드 AI/로보틱스 (→ ML Research)"
+
+      풀스택:
+        description: "프론트엔드 + 백엔드 모두 담당"
+        strong_keywords:
+          - "fullstack"
+          - "full-stack"
+          - "full stack"
+          - "풀스택"
+        keywords:
+          - "프론트엔드"
+          - "react"
+          - "vue"
+          - "next.js"
+        inclusion_criteria:
+          - "프론트엔드와 백엔드 모두 개발"
+          - "제목에 풀스택 명시"
+        exclusion_criteria:
+          - "AI 기능이 핵심인 풀스택 (→ AI Native Builder)"
+        edge_cases:
+          - case: "백엔드 중심이지만 간단한 프론트 작업 포함"
+            resolution: "주력 기술 기준으로 백엔드 소분류에 배치"
+
+  데이터:
+    description: "데이터 수집, 가공, 분석, 관리 관련 직무"
+    subcategories:
+      데이터 엔지니어:
+        description: "데이터 파이프라인 구축, ETL, 데이터 인프라"
+        strong_keywords:
+          - "data engineer"
+          - "데이터 엔지니어"
+          - "etl"
+          - "elt"
+          - "airflow"
+          - "spark"
+          - "데이터 파이프라인"
+          - "data pipeline"
+          - "데이터 웨어하우스"
+          - "data warehouse"
+          - "dbt"
+        keywords:
+          - "kafka"
+          - "bigquery"
+          - "redshift"
+          - "glue"
+          - "hadoop"
+        inclusion_criteria:
+          - "데이터 파이프라인/ETL 설계 및 운영"
+          - "데이터 웨어하우스/레이크 구축"
+          - "대용량 데이터 처리 인프라"
+        exclusion_criteria:
+          - "데이터 분석/시각화 중심 (→ 데이터 분석가/BI)"
+
+      데이터 사이언티스트:
+        description: "통계 분석, 예측 모델링, 실험 설계"
+        strong_keywords:
+          - "data scientist"
+          - "데이터 사이언티스트"
+          - "a/b 테스트"
+          - "실험 설계"
+          - "feature engineering"
+        keywords:
+          - "통계"
+          - "예측 모델"
+          - "regression"
+          - "classification"
+          - "scikit-learn"
+          - "xgboost"
+        inclusion_criteria:
+          - "통계/ML 기반 예측 모델 개발"
+          - "비즈니스 문제를 데이터로 해결"
+          - "A/B 테스트 설계 및 분석"
+        exclusion_criteria:
+          - "딥러닝 연구 중심 (→ ML Research)"
+
+      데이터 분석가/BI:
+        description: "비즈니스 인텔리전스, 대시보드, SQL 중심 분석"
+        strong_keywords:
+          - "data analyst"
+          - "데이터 분석가"
+          - "tableau"
+          - "power bi"
+          - "superset"
+          - "looker"
+        keywords:
+          - "bi"
+          - "대시보드"
+          - "dashboard"
+          - "sql"
+          - "리포트"
+          - "지표"
+          - "kpi"
+        inclusion_criteria:
+          - "BI 도구를 활용한 대시보드/리포트 제작"
+          - "SQL 기반 데이터 추출 및 분석"
+          - "비즈니스 지표 정의 및 모니터링"
+
+      DBA:
+        description: "데이터베이스 관리, 튜닝, 운영"
+        strong_keywords:
+          - "dba"
+          - "데이터베이스 관리"
+          - "db 튜닝"
+        keywords:
+          - "백업"
+          - "복구"
+          - "ha"
+          - "replication"
+          - "postgresql"
+          - "mysql"
+          - "oracle"
+          - "mongodb"
+        inclusion_criteria:
+          - "데이터베이스 설치/운영/튜닝"
+          - "백업/복구/HA 구성"
+          - "DB 성능 최적화"
+
+  인프라:
+    description: "인프라 구축, 운영, 클라우드 관리"
+    subcategories:
+      DevOps/SRE:
+        description: "CI/CD, 모니터링, 사이트 신뢰성 엔지니어링"
+        strong_keywords:
+          - "devops"
+          - "sre"
+          - "terraform"
+          - "ansible"
+          - "argocd"
+          - "on-call"
+        keywords:
+          - "ci/cd"
+          - "jenkins"
+          - "github actions"
+          - "모니터링"
+          - "prometheus"
+          - "grafana"
+          - "datadog"
+        inclusion_criteria:
+          - "CI/CD 파이프라인 구축/운영"
+          - "서비스 안정성 및 모니터링"
+          - "인프라 자동화 (IaC)"
+        exclusion_criteria:
+          - "ML 파이프라인 전담 (→ MLOps)"
+
+      클라우드/플랫폼:
+        description: "클라우드 인프라, 컨테이너 오케스트레이션, 플랫폼 엔지니어링"
+        strong_keywords:
+          - "platform engineering"
+          - "eks"
+          - "ecs"
+          - "클라우드 아키텍트"
+          - "cloud architect"
+          - "네트워크 엔지니어"
+          - "보안 엔지니어"
+        keywords:
+          - "kubernetes"
+          - "k8s"
+          - "docker"
+          - "aws"
+          - "gcp"
+          - "azure"
+          - "클라우드"
+          - "cloud"
+          - "인프라"
+          - "보안"
+          - "네트워크"
+        inclusion_criteria:
+          - "클라우드 인프라 설계/운영"
+          - "Kubernetes 클러스터 관리"
+          - "내부 개발자 플랫폼(IDP) 구축"
+
+  기타:
+    description: "위 분류에 해당하지 않는 직무"
+    subcategories:
+      SI/외주 프로젝트:
+        description: "SI 업체 프리랜서 프로젝트, 파견 개발"
+        strong_keywords:
+          - "프리랜서"
+          - "xplatform"
+          - "차세대"
+          - "투입"
+          - "상주"
+        keywords:
+          - "프로시저"
+          - "근무기간"
+          - "si"
+          - "sm"
+        inclusion_criteria:
+          - "제목에 [프리랜서] 태그"
+          - "프로젝트명/기간/등급이 제목에 명시"
+          - "특정 기업 파견/상주 개발"
+
+      분류 불명:
+        description: "본문 분석으로도 직무 파악이 어려운 공고"
+        inclusion_criteria:
+          - "제목과 본문 모두 직무 특정이 불가"
+          - "다른 모든 분류의 키워드 매칭 실패"
+
+# 고용형태 분류 (별도 축)
+employment_types:
+  정규직:
+    keywords: ["정규직", "full-time"]
+    is_default: true
+  프리랜서:
+    keywords: ["프리랜서", "freelance", "freelancer", "프리"]
+    patterns: ["^\\[프리랜서\\]", "^\\[프리\\]"]
+  인턴:
+    keywords: ["인턴", "intern", "internship"]
+    patterns: ["\\[인턴\\]", "인턴십"]
+  계약직:
+    keywords: ["계약직", "contract", "기간제"]

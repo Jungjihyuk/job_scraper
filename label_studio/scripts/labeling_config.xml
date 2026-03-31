@@ -1,0 +1,201 @@
+<View style="font-family: -apple-system, sans-serif;">
+  <Header value="채용공고 도메인 + 기술스택 검수"/>
+
+  <!-- 직무명 + AI 예측 도메인 -->
+  <View style="display:flex; gap:16px; margin-bottom:16px;">
+    <View style="flex:1; background:#f8f9fa; border:1px solid #e0e0e0; border-radius:8px; padding:14px;">
+      <Header value="📌 직무명" size="5"/>
+      <Text name="position" value="$position"/>
+    </View>
+    <View style="flex:1; background:#fff8e1; border:1px solid #ffe082; border-radius:8px; padding:14px;">
+      <Header value="🤖 AI 예측 도메인" size="5"/>
+      <Text name="ai_prediction" value="$ai_domain"/>
+    </View>
+  </View>
+
+  <!-- AI 추출 기술 스택 -->
+  <View style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:14px; margin-bottom:16px;">
+    <Header value="🔧 AI 추출 기술 스택" size="5"/>
+    <Text name="ai_techs_display" value="$ai_techs"/>
+  </View>
+
+  <!-- 포지션 상세 -->
+  <View style="background:#f8f9fa; border:1px solid #e0e0e0; border-radius:8px; padding:14px; margin-bottom:12px;">
+    <Header value="📋 포지션 상세" size="5"/>
+    <HyperText name="position_detail" value="$position_detail"/>
+  </View>
+
+  <!-- 주요 업무 -->
+  <View style="background:#e3f2fd; border:1px solid #90caf9; border-radius:8px; padding:14px; margin-bottom:12px;">
+    <Header value="💼 주요 업무" size="5"/>
+    <HyperText name="main_tasks" value="$main_tasks"/>
+  </View>
+
+  <!-- 자격요건 -->
+  <View style="background:#fce4ec; border:1px solid #ef9a9a; border-radius:8px; padding:14px; margin-bottom:12px;">
+    <Header value="✅ 자격요건" size="5"/>
+    <HyperText name="requirements" value="$requirements"/>
+  </View>
+
+  <!-- 우대사항 -->
+  <View style="background:#f3e5f5; border:1px solid #ce93d8; border-radius:8px; padding:14px; margin-bottom:16px;">
+    <Header value="⭐ 우대사항" size="5"/>
+    <HyperText name="preferred" value="$preferred"/>
+  </View>
+
+  <!-- ━━━ 1. 도메인 선택 ━━━ -->
+  <Header value="1. 최종 도메인 분류" size="4"/>
+  <Choices name="domain" toName="position_detail" choice="single" required="true" layout="select">
+    <Choice value="IT/소프트웨어"/>
+    <Choice value="게임"/>
+    <Choice value="건설/부동산"/>
+    <Choice value="공공/정책"/>
+    <Choice value="광고/마케팅"/>
+    <Choice value="교육"/>
+    <Choice value="국방/방산"/>
+    <Choice value="금융"/>
+    <Choice value="농업/식품"/>
+    <Choice value="로보틱스"/>
+    <Choice value="미디어/엔터테인먼트"/>
+    <Choice value="물류/유통"/>
+    <Choice value="바이오/제약"/>
+    <Choice value="반도체"/>
+    <Choice value="법률"/>
+    <Choice value="보안/사이버보안"/>
+    <Choice value="블록체인/웹3"/>
+    <Choice value="뷰티/화장품"/>
+    <Choice value="생활서비스"/>
+    <Choice value="스포츠"/>
+    <Choice value="식품/외식"/>
+    <Choice value="에너지"/>
+    <Choice value="여행/관광"/>
+    <Choice value="의료/헬스케어"/>
+    <Choice value="인사/HR"/>
+    <Choice value="자동차/모빌리티"/>
+    <Choice value="제조"/>
+    <Choice value="커머스"/>
+    <Choice value="통신"/>
+    <Choice value="무역/수출"/>
+    <Choice value="패션"/>
+    <Choice value="항공/우주"/>
+    <Choice value="해양/조선"/>
+    <Choice value="미분류"/>
+  </Choices>
+  <Header value="↳ 목록에 없는 도메인이면 '미분류' 선택 후 아래에 입력" size="5"/>
+  <TextArea name="custom_domain" toName="position_detail"
+            placeholder="새 도메인명 입력 (예: 우주항공). 목록에서 선택했으면 비워두세요."
+            rows="1" maxSubmissions="1" editable="true" required="false"/>
+
+  <!-- ━━━ 2. 기술 스택 선택 ━━━ -->
+  <Header value="2. 최종 기술 스택 (AI 추출 결과를 확인하고 수정하세요)" size="4"/>
+  <Taxonomy name="core_technologies" toName="position_detail" required="false" maxUsages="50" pathSeparator="/">
+    <Choice value="프로그래밍 언어">
+      <Choice value="Python"/><Choice value="Java"/><Choice value="JavaScript"/>
+      <Choice value="TypeScript"/><Choice value="C++"/><Choice value="C#"/>
+      <Choice value="Go"/><Choice value="Rust"/><Choice value="Kotlin"/>
+      <Choice value="Swift"/><Choice value="Scala"/><Choice value="R"/>
+      <Choice value="SQL"/><Choice value="PHP"/><Choice value="Ruby"/>
+      <Choice value="Dart"/><Choice value="Elixir"/><Choice value="Lua"/>
+    </Choice>
+    <Choice value="프론트엔드">
+      <Choice value="React"/><Choice value="Vue.js"/><Choice value="Angular"/>
+      <Choice value="Next.js"/><Choice value="Nuxt.js"/><Choice value="Svelte"/>
+      <Choice value="HTML"/><Choice value="CSS"/><Choice value="Tailwind CSS"/>
+      <Choice value="React Native"/><Choice value="Flutter"/>
+      <Choice value="SwiftUI"/><Choice value="Jetpack Compose"/>
+      <Choice value="Electron"/><Choice value="Storybook"/>
+    </Choice>
+    <Choice value="백엔드">
+      <Choice value="Spring"/><Choice value="Django"/><Choice value="FastAPI"/>
+      <Choice value="Flask"/><Choice value="Node.js"/><Choice value="NestJS"/>
+      <Choice value="gRPC"/><Choice value="GraphQL"/><Choice value="REST API"/>
+      <Choice value="RabbitMQ"/><Choice value="Celery"/>
+      <Choice value="Supabase"/><Choice value="Prisma"/>
+    </Choice>
+    <Choice value="AI/ML">
+      <Choice value="PyTorch"/><Choice value="TensorFlow"/><Choice value="JAX"/>
+      <Choice value="scikit-learn"/><Choice value="Keras"/><Choice value="ONNX"/>
+      <Choice value="Pandas"/><Choice value="NumPy"/><Choice value="OpenCV"/>
+      <Choice value="YOLO"/><Choice value="Transformer"/><Choice value="BERT"/>
+      <Choice value="DeepSpeed"/><Choice value="SciPy"/>
+      <Choice value="XGBoost"/><Choice value="LightGBM"/>
+      <Choice value="CatBoost"/><Choice value="spaCy"/>
+      <Choice value="머신러닝"/><Choice value="딥러닝"/>
+      <Choice value="NLP"/><Choice value="컴퓨터비전"/>
+      <Choice value="강화학습"/><Choice value="시계열"/>
+      <Choice value="이상탐지"/><Choice value="추천시스템"/>
+    </Choice>
+    <Choice value="Vision/Multimodal">
+      <Choice value="VLM"/><Choice value="CLIP"/>
+      <Choice value="Stable Diffusion"/><Choice value="Multimodal"/>
+      <Choice value="SAM"/><Choice value="Object Detection"/>
+    </Choice>
+    <Choice value="LLM/AI Agent">
+      <Choice value="LLM"/><Choice value="RAG"/><Choice value="GPT"/>
+      <Choice value="LangChain"/><Choice value="LangGraph"/><Choice value="LangSmith"/>
+      <Choice value="LlamaIndex"/><Choice value="CrewAI"/><Choice value="AutoGen"/>
+      <Choice value="HuggingFace"/><Choice value="OpenAI API"/><Choice value="Claude API"/>
+      <Choice value="Gemini"/><Choice value="Llama"/><Choice value="Mistral"/>
+      <Choice value="Whisper"/><Choice value="vLLM"/><Choice value="Ollama"/>
+      <Choice value="LoRA"/><Choice value="PEFT"/>
+      <Choice value="Fine-tuning"/><Choice value="Prompt Engineering"/>
+      <Choice value="AI Agent"/><Choice value="MCP"/><Choice value="Function Calling"/>
+      <Choice value="생성형 AI"/>
+    </Choice>
+    <Choice value="Vector DB">
+      <Choice value="Vector DB"/><Choice value="Pinecone"/>
+      <Choice value="ChromaDB"/><Choice value="Weaviate"/>
+      <Choice value="Milvus"/><Choice value="Qdrant"/>
+      <Choice value="FAISS"/><Choice value="pgvector"/>
+    </Choice>
+    <Choice value="MLOps">
+      <Choice value="MLOps"/><Choice value="MLflow"/><Choice value="Kubeflow"/>
+      <Choice value="Weights &amp; Biases"/><Choice value="DVC"/>
+      <Choice value="Triton"/><Choice value="BentoML"/><Choice value="TensorRT"/>
+      <Choice value="Streamlit"/><Choice value="Gradio"/>
+    </Choice>
+    <Choice value="데이터 엔지니어링">
+      <Choice value="Spark"/><Choice value="Hadoop"/><Choice value="Airflow"/>
+      <Choice value="Kafka"/><Choice value="Flink"/><Choice value="dbt"/>
+      <Choice value="Snowflake"/><Choice value="BigQuery"/>
+      <Choice value="Databricks"/><Choice value="Delta Lake"/>
+      <Choice value="Polars"/><Choice value="DuckDB"/>
+      <Choice value="Trino"/><Choice value="Prefect"/><Choice value="Dagster"/>
+      <Choice value="데이터엔지니어링"/>
+    </Choice>
+    <Choice value="DB">
+      <Choice value="MySQL"/><Choice value="PostgreSQL"/>
+      <Choice value="MongoDB"/><Choice value="Redis"/>
+      <Choice value="Elasticsearch"/><Choice value="DynamoDB"/>
+      <Choice value="Oracle"/><Choice value="Neo4j"/>
+      <Choice value="Cassandra"/><Choice value="ClickHouse"/>
+      <Choice value="CockroachDB"/>
+    </Choice>
+    <Choice value="인프라/DevOps">
+      <Choice value="Docker"/><Choice value="Kubernetes"/>
+      <Choice value="AWS"/><Choice value="GCP"/><Choice value="Azure"/>
+      <Choice value="Terraform"/><Choice value="CI/CD"/>
+      <Choice value="Jenkins"/><Choice value="GitHub Actions"/>
+      <Choice value="ArgoCD"/><Choice value="Linux"/><Choice value="Nginx"/>
+      <Choice value="Git"/><Choice value="Grafana"/>
+      <Choice value="Prometheus"/><Choice value="Datadog"/>
+      <Choice value="Ansible"/><Choice value="Helm"/><Choice value="Istio"/>
+      <Choice value="OpenTelemetry"/><Choice value="Sentry"/>
+      <Choice value="ELK Stack"/><Choice value="Pulumi"/><Choice value="Serverless"/>
+    </Choice>
+    <Choice value="테스팅">
+      <Choice value="Selenium"/><Choice value="Playwright"/>
+      <Choice value="Jest"/><Choice value="Cypress"/>
+    </Choice>
+  </Taxonomy>
+  <Header value="↳ 목록에 없는 기술이 있으면 아래에 콤마(,)로 구분하여 입력" size="5"/>
+  <TextArea name="custom_techs" toName="position_detail"
+            placeholder="예: UiPath, Blue Prism, SAP. 목록에서 모두 선택했으면 비워두세요."
+            rows="1" maxSubmissions="1" editable="true" required="false"/>
+
+  <!-- 검수 메모 -->
+  <Header value="검수 메모 (선택사항)" size="5"/>
+  <TextArea name="review_note" toName="position_detail"
+            placeholder="도메인/기술스택 변경 이유나 특이사항을 기록하세요"
+            rows="2" maxSubmissions="1" editable="true" required="false"/>
+</View>

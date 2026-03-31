@@ -1,0 +1,259 @@
+# 핵심 기술 분류 체계 (Taxonomy)
+# Version: 1.0.0
+# Last Updated: 2026-03-31
+
+version: "1.0.0"
+
+categories:
+  RAG:
+    description: "Retrieval-Augmented Generation 기술"
+    inclusion_criteria:
+      - "벡터 DB + LLM 조합의 검색 증강 생성"
+      - "지식 베이스 구축 및 질의응답 시스템"
+      - "임베딩 기반 문서 검색/활용"
+    exclusion_criteria:
+      - "단순 전문 검색 (→ Search)"
+      - "LLM만 사용하고 검색 증강 없음 (→ LLM)"
+    edge_cases:
+      - case: "하이브리드 검색 (키워드 + 벡터)"
+        resolution: "RAG 파이프라인의 일부이면 RAG, 독립 검색이면 Search"
+    keywords:
+      - "RAG"
+      - "retrieval augmented"
+      - "retrieval-augmented"
+      - "벡터검색"
+      - "vector search"
+      - "vector db"
+      - "embedding"
+      - "임베딩"
+      - "지식베이스"
+      - "knowledge base"
+
+  LLM:
+    description: "대규모 언어 모델 개발/활용/서빙"
+    inclusion_criteria:
+      - "LLM 파인튜닝, RLHF, 프롬프트 엔지니어링"
+      - "LLM 기반 서비스 개발 (챗봇, 요약 등)"
+      - "모델 서빙/인퍼런스 최적화"
+    exclusion_criteria:
+      - "LLM을 API로만 호출하는 일반 앱 (기술 스택이지 핵심 기술 아님)"
+    edge_cases:
+      - case: "프롬프트 엔지니어링만 하는 경우"
+        resolution: "프롬프트 설계가 핵심 역할이면 LLM으로 분류"
+    keywords:
+      - "LLM"
+      - "large language model"
+      - "GPT"
+      - "ChatGPT"
+      - "Claude"
+      - "생성형 AI"
+      - "generative AI"
+      - "프롬프트"
+      - "prompt"
+      - "파인튜닝"
+      - "fine-tuning"
+      - "finetuning"
+      - "RLHF"
+
+  Agent:
+    description: "AI 에이전트 시스템 개발"
+    inclusion_criteria:
+      - "자율적 의사결정이 가능한 AI 에이전트"
+      - "멀티 에이전트 오케스트레이션"
+      - "Tool use / Function calling 기반 시스템"
+    exclusion_criteria:
+      - "단순 챗봇 (의사결정/행동 수행 없음 → LLM)"
+    edge_cases:
+      - case: "ReAct 패턴 챗봇"
+        resolution: "도구 사용 + 자율 판단이 있으면 Agent"
+    keywords:
+      - "agent"
+      - "에이전트"
+      - "agentic"
+      - "tool use"
+      - "function calling"
+      - "autonomous"
+      - "자율"
+      - "멀티에이전트"
+      - "multi-agent"
+
+  MLOps:
+    description: "ML 모델 라이프사이클 관리 인프라"
+    inclusion_criteria:
+      - "모델 학습/배포/모니터링 파이프라인"
+      - "Feature Store, Model Registry 구축"
+      - "실험 관리, A/B 테스트 인프라"
+    exclusion_criteria:
+      - "일반 DevOps/CI/CD (→ Cloud/Infra)"
+      - "단순 모델 학습 스크립트 작성"
+    edge_cases:
+      - case: "Airflow로 데이터 + ML 파이프라인 운영"
+        resolution: "ML 모델 서빙이 포함되면 MLOps, 데이터 ETL만이면 Data Engineering"
+    keywords:
+      - "MLOps"
+      - "ML ops"
+      - "모델 배포"
+      - "model serving"
+      - "모델 관리"
+      - "model registry"
+      - "feature store"
+      - "kubeflow"
+      - "mlflow"
+      - "airflow"
+      - "파이프라인"
+
+  Computer Vision:
+    description: "컴퓨터 비전, 영상/이미지 처리"
+    inclusion_criteria:
+      - "이미지 분류, 객체 탐지, 세그멘테이션"
+      - "OCR, 얼굴 인식"
+      - "영상 처리, 비디오 분석"
+    exclusion_criteria:
+      - "단순 이미지 업로드/표시 기능"
+      - "디자인 툴 (→ SaaS/B2B 도메인)"
+    edge_cases:
+      - case: "의료 영상 분석"
+        resolution: "Computer Vision으로 분류 (도메인은 바이오/헬스케어)"
+    keywords:
+      - "computer vision"
+      - "컴퓨터 비전"
+      - "컴퓨터비전"
+      - "영상처리"
+      - "이미지"
+      - "image"
+      - "객체 탐지"
+      - "object detection"
+      - "segmentation"
+      - "OCR"
+      - "얼굴인식"
+
+  NLP:
+    description: "자연어 처리 (LLM 제외 전통 NLP)"
+    inclusion_criteria:
+      - "텍스트 분류, 감성 분석, 개체명 인식"
+      - "형태소 분석, 토크나이징"
+      - "기계 번역, 문서 요약 (비LLM 방식)"
+    exclusion_criteria:
+      - "LLM 기반 텍스트 생성 (→ LLM)"
+      - "RAG 시스템의 텍스트 전처리 (→ RAG)"
+    edge_cases:
+      - case: "LLM + 전통 NLP 혼합"
+        resolution: "두 기술 모두 태깅 (복수 선택 가능)"
+    keywords:
+      - "NLP"
+      - "자연어처리"
+      - "자연어 처리"
+      - "natural language"
+      - "텍스트 분석"
+      - "text mining"
+      - "감성분석"
+      - "형태소"
+      - "토크나이저"
+      - "tokenizer"
+      - "번역"
+      - "요약"
+
+  Data Engineering:
+    description: "데이터 파이프라인, 웨어하우스, ETL/ELT"
+    inclusion_criteria:
+      - "ETL/ELT 파이프라인 구축"
+      - "데이터 웨어하우스/레이크 설계"
+      - "실시간 스트리밍 데이터 처리"
+    exclusion_criteria:
+      - "단순 DB CRUD (→ 백엔드 개발)"
+      - "BI 대시보드만 (→ 데이터 분석)"
+    edge_cases:
+      - case: "dbt + Airflow 기반 분석 환경"
+        resolution: "파이프라인 구축이 핵심이면 Data Engineering"
+    keywords:
+      - "데이터 엔지니어링"
+      - "data engineering"
+      - "ETL"
+      - "ELT"
+      - "데이터 파이프라인"
+      - "data pipeline"
+      - "spark"
+      - "kafka"
+      - "hadoop"
+      - "데이터 웨어하우스"
+      - "data warehouse"
+      - "데이터 레이크"
+      - "data lake"
+      - "dbt"
+
+  Cloud/Infra:
+    description: "클라우드 인프라, DevOps, 컨테이너 오케스트레이션"
+    inclusion_criteria:
+      - "AWS/GCP/Azure 기반 인프라 설계"
+      - "Kubernetes, Docker 기반 컨테이너 운영"
+      - "CI/CD 파이프라인 구축"
+      - "IaC (Terraform, Pulumi 등)"
+    exclusion_criteria:
+      - "ML 모델 배포 인프라 (→ MLOps)"
+      - "단순 클라우드 서비스 이용 (기술 언급 수준)"
+    edge_cases:
+      - case: "GPU 클러스터 관리"
+        resolution: "ML 학습용이면 MLOps, 범용 인프라이면 Cloud/Infra"
+    keywords:
+      - "AWS"
+      - "GCP"
+      - "Azure"
+      - "클라우드"
+      - "cloud"
+      - "kubernetes"
+      - "k8s"
+      - "docker"
+      - "terraform"
+      - "인프라"
+      - "infrastructure"
+      - "DevOps"
+      - "CI/CD"
+
+  Recommendation:
+    description: "추천 시스템, 개인화 엔진"
+    inclusion_criteria:
+      - "협업 필터링, 콘텐츠 기반 필터링"
+      - "CTR 예측, 랭킹 모델"
+      - "개인화 서비스 엔진"
+    exclusion_criteria:
+      - "단순 인기순 정렬 (추천 알고리즘 아님)"
+    edge_cases:
+      - case: "검색 결과 개인화"
+        resolution: "추천 로직이 핵심이면 Recommendation, 검색이 핵심이면 Search"
+    keywords:
+      - "추천"
+      - "recommendation"
+      - "추천시스템"
+      - "recommender"
+      - "협업 필터링"
+      - "collaborative filtering"
+      - "개인화"
+      - "personalization"
+      - "CTR"
+      - "랭킹"
+
+  Search:
+    description: "검색 엔진, 정보 검색 시스템"
+    inclusion_criteria:
+      - "검색 엔진 개발/운영 (Elasticsearch 등)"
+      - "검색 품질 개선 (relevance tuning)"
+      - "자동완성, 검색어 추천"
+    exclusion_criteria:
+      - "벡터 검색만 (→ RAG)"
+      - "DB 쿼리 최적화 (→ Data Engineering)"
+    edge_cases:
+      - case: "시맨틱 검색"
+        resolution: "RAG 파이프라인 일부면 RAG, 독립 검색이면 Search"
+    keywords:
+      - "검색"
+      - "search"
+      - "elasticsearch"
+      - "opensearch"
+      - "검색엔진"
+      - "search engine"
+      - "색인"
+      - "indexing"
+      - "쿼리"
+      - "query"
+      - "relevance"
+      - "ranking"

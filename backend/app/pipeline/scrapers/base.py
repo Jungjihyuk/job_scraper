@@ -1,0 +1,259 @@
+"""
+🌐 사이트별 어댑터 패턴 - 다양한 사이트 지원을 위한 추상화
+"""
+
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any
+from playwright.async_api import Page
+from app.pipeline.data_models import JobPostingData, PipelineConfig
+
+
+class Scraper(ABC):
+    """스크래핑 로직을 캡슐화하는 기본 클래스"""
+
+    def __init__(self, site_name: str):
+        self.site_name = site_name
+        self.base_url = self.get_base_url()
+        self.selectors = self.get_selectors()
+        self.config = self.get_site_config()
+
+    @abstractmethod
+    def get_base_url(self) -> str:
+        """사이트 기본 URL 반환"""
+        pass
+
+    @abstractmethod
+    def get_selectors(self) -> Dict[str, str]:
+        """사이트별 CSS 셀렉터 반환"""
+        pass
+
+    @abstractmethod
+    def get_site_config(self) -> Dict[str, Any]:
+        """사이트별 설정 반환"""
+        pass
+
+    @abstractmethod
+    def build_target_url(self, job_category: str) -> str:
+        """스크래핑 타겟 URL 생성"""
+        pass
+
+    @abstractmethod
+    async def extract_job_posting_data(self, page: Page) -> List[JobPostingData]:
+        """페이지에서 JobPostingData 객체 리스트 추출"""
+        pass
+
+    @abstractmethod
+    async def scroll_page(self, page: Page, scroll_delay: int) -> bool:
+        """페이지 스크롤 실행 (새로운 콘텐츠 로드 여부 반환)"""
+        pass
+
+    @abstractmethod
+    async def wait_for_page_load(self, page: Page):
+        """페이지 로드 완료 대기"""
+        pass
+
+    @abstractmethod
+    async def setup_page(self, page: Page):
+        """페이지 초기 설정 (리소스 필터링 등)"""
+        pass
+
+
+class WantedScraper(Scraper):
+    """Wanted 사이트 스크래퍼"""
+
+    # 직무 → 상위 직군 카테고리 매핑
+    # Wanted.co.kr의 직군 분류 체계 기준
+    JOB_CATEGORY_MAP = {
+        "파이썬 개발자": "개발",
+        "머신러닝 엔지니어": "개발",
+        "데이터 엔지니어": "개발",
+        "서버 개발자": "개발",
+        "빅데이터 엔지니어": "개발",
+        "데이터 사이언티스트": "개발",
+        ".NET 개발자": "개발",
+    }
+
+    def __init__(self):
+        super().__init__("wanted")
+        self._current_job_category = ""  # build_target_url에서 설정
+
+    def get_base_url(self) -> str:
+        return "https://www.wanted.co.kr"
+
+    def get_selectors(self) -> Dict[str, str]:
+        return {
+            "post_list": "li.Card_Card__aaatv",
+            "job_post_link": 'div[data-cy="job-card"] a',
+            "loading_indicator": ".loading",
+        }
+
+    def get_site_config(self) -> Dict[str, Any]:
+        return {
+            "job_id_mapping": {
+                "파이썬 개발자": 899,
+                "머신러닝 엔지니어": 1634,
+                "데이터 엔지니어": 655,
+                "서버 개발자": 872,
+                "빅데이터 엔지니어": 1025,
+                "데이터 사이언티스트": 1024,
+                ".NET 개발자": 661,
+            },
+            "default_params": {
+                "country": "kr",
+                "job_sort": "job.latest_order",
+                "years": -1,
+                "locations": "all",
+            },
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "scroll_delay": 2000,
+            "max_retries": 3,
+        }
+
+    def build_target_url(self, job_category: str) -> str:
+        import os
+        from dotenv import load_dotenv
+
+        load_dotenv()
+
+        job_id = self.config["job_id_mapping"].get(job_category)
+        if not job_id:
+            raise ValueError(f"Unsupported job category for Wanted: {job_category}")
+
+        # 현재 직무의 상위 카테고리를 저장 (extract 시 fallback용)
+        self._current_job_category = self.JOB_CATEGORY_MAP.get(
+            job_category, ""
+        )
+
+        base_url = os.getenv("WantedScraper").format(job_id=job_id)
+        params = self.config["default_params"]
+        query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+
+        return f"{base_url}?{query_string}"
+
+    async def extract_job_posting_data(self, page: Page) -> List[JobPostingData]:
+        """Wanted 페이지에서 JobPostingData 객체 리스트 추출"""
+        job_posting_data_list = []
+
+        try:
+            job_post_elements = await page.query_selector_all(
+                self.selectors["post_list"]
+            )
+
+            for job_element in job_post_elements:
+                job_posting_data = await self._extract_single_job_posting_data(
+                    job_element
+                )
+                if job_posting_data:
+                    job_posting_data_list.append(job_posting_data)
+
+        except Exception as e:
+            raise Exception(f"Failed to extract JobPostingData from Wanted: {e}")
+
+        return job_posting_data_list
+
+    async def _extract_single_job_posting_data(self, job_element) -> JobPostingData:
+        """단일 job 요소에서 JobPostingData 객체 생성"""
+        try:
+            href_element = await job_element.query_selector(
+                self.selectors["job_post_link"]
+            )
+            if not href_element:
+                return None
+
+            # URL 추출
+            href = await href_element.get_attribute("href")
+            if not href:
+                return None
+
+            # 새로운 구조에서 텍스트로 직무명, 회사명 추출
+            position_element = await job_element.query_selector('[class*="position"]')
+            position = (
+                await position_element.text_content() if position_element else None
+            )
+
+            company_element = await job_element.query_selector('[class*="company"]')
+            company = await company_element.text_content() if company_element else None
+
+            # 필수 데이터 검증
+            if not all([href, position, company]):
+                return None
+
+            # URL에서 posting_id 추출 (예: /wd/323478 → 323478)
+            posting_id = href.split("/")[-1] if href.startswith("/wd/") else ""
+
+            # job_category 속성 추출 (HTML 우선, 없으면 config 매핑 fallback)
+            job_category = (
+                await href_element.get_attribute("data-job-category")
+                or self._current_job_category
+            )
+
+            # JobPostingData 객체 생성
+            return JobPostingData(
+                full_url=self.base_url + href,
+                position=position.strip(),
+                company=company.strip(),
+                posting_id=posting_id,
+                job_category=job_category,
+            )
+
+        except Exception as e:
+            # 개별 job 처리 실패 시 None 반환
+            return None
+
+    async def scroll_page(self, page: Page, scroll_delay: int) -> bool:
+        """Wanted 페이지 스크롤 (새로운 콘텐츠 로드 여부 반환)"""
+        # 스크롤 전 job 개수
+        previous_count = len(await page.query_selector_all(self.selectors["post_list"]))
+
+        # 스크롤 실행
+        await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        await page.wait_for_timeout(scroll_delay)
+
+        # 스크롤 후 job 개수
+        current_count = len(await page.query_selector_all(self.selectors["post_list"]))
+
+        # 새로운 콘텐츠가 로드되었는지 확인
+        return current_count > previous_count
+
+    async def wait_for_page_load(self, page: Page):
+        """Wanted 페이지 로드 완료 대기"""
+        await page.wait_for_timeout(5000)
+        await page.wait_for_selector(self.selectors["post_list"], timeout=10000)
+
+    async def setup_page(self, page: Page):
+        """Wanted 페이지 초기 설정"""
+        await page.route("**/*", self._filter_resource)
+
+    async def _filter_resource(self, route):
+        """리소스 필터링 - 이미지, 폰트 등 차단"""
+        request = route.request
+        if request.resource_type in ["media", "font", "iframe", "stylesheet"]:
+            await route.abort()
+        else:
+            await route.continue_()
+
+
+class ScraperFactory:
+    """스크래퍼 팩토리"""
+
+    _scrapers = {
+        "wanted": WantedScraper,
+        # 새로운 사이트 추가 시 여기에 등록
+        # "jobkorea": JobKoreaScraper,
+        # "saramin": SaraminScraper,
+    }
+
+    @classmethod
+    def create_scraper(cls, site_name: str) -> Scraper:
+        """사이트 이름으로 스크래퍼 생성"""
+        adapter_class = cls._scrapers.get(site_name.lower())
+        if not adapter_class:
+            raise ValueError(
+                f"Unsupported site: {site_name}. Supported sites: {list(cls._scrapers.keys())}"
+            )
+        return adapter_class()
+
+    @classmethod
+    def get_supported_sites(cls) -> List[str]:
+        """지원되는 사이트 목록 반환"""
+        return list(cls._scrapers.keys())
