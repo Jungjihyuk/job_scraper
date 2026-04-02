@@ -83,7 +83,7 @@ job_scraper/
 │   ├── scripts/             #   데이터 처리 스크립트
 │   └── outputs/             #   분석 결과 CSV
 ├── docs/                    # 프로젝트 문서
-├── tests/                   # 테스트
+│   └── tests/              #   테스트 (pytest)
 └── docker-compose.yml
 ```
 
@@ -134,6 +134,22 @@ cd backend && uv run app/cli.py --max-scrolls 5 --debug
 
 # 프론트엔드 개발 서버
 cd frontend/apps/web && pnpm dev                      # http://localhost:5173
+```
+
+## 테스트
+
+```bash
+# 전체 테스트 실행
+cd backend && uv run pytest tests/
+
+# 특정 파일 실행
+cd backend && uv run pytest tests/test_scraping_api.py
+
+# 특정 테스트만 실행
+cd backend && uv run pytest tests/ -k "test_name"
+
+# 상세 출력
+cd backend && uv run pytest tests/ -v
 ```
 
 ## CLI 라벨링 파이프라인

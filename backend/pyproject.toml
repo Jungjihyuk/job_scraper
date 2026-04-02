@@ -80,3 +80,8 @@ extend-ignore = ["E203"]   # Ignore error including whitespace before colon
 plugins = [
     "flake8_mutable"       # Prevent the use of mutable objects as default arguments in functions
 ]
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.3.0",
+]
