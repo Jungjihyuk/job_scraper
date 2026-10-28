@@ -125,6 +125,8 @@ cd backend && pytest tests/                            # Run tests
 | `2. 작업/W-012 …/` | 기획 · 설계 · 할 일 · 기록. **일하는 동안 고치는 곳은 여기뿐** | `/l-plan` → `/l-design` → `/l-task` → `/l-build` |
 | `3. 현재 상태/` | 지금 시스템의 모습. **작업이 끝날 때만** 승인 후 갱신 | `/l-build` 마무리 · `/l-sync` |
 | `4. 운영 기록/` | 보고 (`보고/현황.md`) · 회의록 | `/l-report` |
+| `📒 부채/` | 이해 부채 카드 (카드 1장 = 부채 1개) | `/l-learn` |
+| `5. 기존 문서/` | 기존 문서 원본. **고치지 않는다** | — |
 
 ### 지킬 것
 1. **형식은 스크립트가, 내용은 AI가.** 번호 · 파일 · 폴더 · 검사 · 상태 바꾸기는 `lantern …` 명령으로 한다. 손으로 ID를 짓거나 파일을 만들지 않는다.
@@ -139,9 +141,23 @@ cd backend && pytest tests/                            # Run tests
 10. **묻는 법.** 고를 수 있는 질문은 실제 후보만 선택지로 낸다 — 직접 입력 칸은 질문 도구가 맨 아래에 따로 주므로 "직접 입력" · "Other를 골라 주세요" 같은 빈 선택지를 만들지 않는다. 후보를 만들 수 없는 자유 답(소개 · 이름 등)은 선택지 없이 평범한 메시지로 묻는다.
 11. **보호 칸은 사람이 정한다.** lantern이 읽고 쓰는 칸(`0. 템플릿/_meta/보호 칸.md`에 목록)을 스스로 지우거나 제목을 바꾸지 않는다. 검사나 마무리에서 "… 칸이 없습니다. … 일부러 바꾸셨나요?"가 나오면 **칸을 되살리지 말고** 사용자에게 셋 중 하나로 묻는다 — 제목을 바꿨다 → `lantern sections rename <키> "새 제목"` · 이 기능을 안 쓴다 → `lantern sections off <키>` · 실수다 → 템플릿대로 칸을 되살린다.
 
+### 개발 원칙 — 서비스 (웹 · 앱) · 바깥 연결 · 코드 중간 · 1인
+자세히: `docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md` (자동 생성 · `lantern principles show`)
+- **지킴:** 단순함 (KISS · YAGNI) · 단일 책임 (SRP) · 단일 출처 (DRY · SSOT) · 의존 방향 (DIP · 순수한 핵심) · 경계에서 입력 검증 · 재현성 · 관찰 가능성 (로그 · 지표)
+- **권장:** 확장 지점 (OCP · LSP · ISP) · 공개 인터페이스 지키기 (semver · 폐기 예고)
+- 원칙끼리 부딪히면 단순함이 먼저다. 끼워 넣는 자리는 확장 지점에만 만든다.
+- **작업 방식:** 코딩 전에 생각한다 · 필요한 곳만 고친다 · 목표로 검증한다
+
+### 코드 컨벤션 — Python · TypeScript
+- 고친 뒤 돌리고 모두 통과해야 끝: 포맷 `cd backend && uv run ruff format --check app/` · 린트 `cd backend && uv run ruff check app/` · 타입 검사 `cd backend && uv run pyright app/` · 테스트 `cd backend && uv run pytest` — 린트 · 타입 검사는 `lantern lint`로 한 번에
+- Python 타입 힌트: 모든 함수의 인자와 반환값 (모양이 정해지지 않은 데이터만 Any)
+- Python 문서 주석 (Google 스타일 docstring · 한국어): 모듈은 책임 한 줄 + 하지 않는 일, 공개 함수 · 클래스는 Google 스타일(Args · Returns · Raises)
+- TypeScript 타입 힌트: 모든 함수의 인자와 반환값, any 대신 unknown
+- TypeScript 문서 주석 (TSDoc (/** … */) · 한국어): 내보내는 모든 것에 TSDoc (@param · @returns · @throws)
+
 ### 커밋
 - 할 일 하나 = 커밋 하나. 메시지 끝에 ID: `feat: 로그인 버튼 추가 [W-012-T02]` (여러 할 일을 섞지 않는다)
-- 문서(`할 일.md` 체크 · `기록.md` 증거)는 코드와 **같은 커밋**에 넣는다
+- 문서는 `docs/`(docs-local 브랜치)에 **따로** 커밋하고 코드 커밋 번호로 잇는다: `git -C docs commit -m "docs: W-012-T02 기록 (code a1b2c3d)"`. 코드 커밋에 `docs/`를 넣지 않는다
 
 ### 명령 한눈에
 | 하고 싶은 것 | 명령 |

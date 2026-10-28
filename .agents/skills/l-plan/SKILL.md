@@ -54,6 +54,9 @@ lantern check --epic W-012
 ```
 ⚠ 애매한 말 · 여러 뜻 · 형식 경고는 고친다. 뜻을 모르겠으면 사람에게 묻는다.
 
+## 7. 모르는 기술 → /l-learn 후보
+기획에 기술 용어가 나오면 후보를 고른다: `lantern debt find "<용어>"`(아는 기술 · 카드 확인)와 `lantern knowledge search "<용어>"`로 **노트가 있는 기술은 처음부터 뺀다.** 한 번에 최대 3개, 마지막 보고 때 보여 주고 **작업은 멈추지 않는다.** 사용자가 고르면 `/l-learn`으로 넘긴다. "이건 알아"는 `lantern debt known add "<용어>"`.
+
 ## 공통 마무리
 ```bash
 lantern close l-plan --work W-012
