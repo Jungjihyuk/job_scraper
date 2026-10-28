@@ -20,5 +20,6 @@ export const JOB_OPTIONS = [
   { value: '서버 개발자', label: '서버 개발자' },
   { value: '데이터 사이언티스트', label: '데이터 사이언티스트' },
   { value: '빅데이터 엔지니어', label: '빅데이터 엔지니어' },
+  { value: '프론트엔드 개발자', label: '프론트엔드 개발자'},
   { value: '.NET 개발자', label: '.NET 개발자' },
 ] as const
