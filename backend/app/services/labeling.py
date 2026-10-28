@@ -14,7 +14,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.logging import create_development_logger
-from app.models.job import JobPosting
+from app.models.job import ExperienceCategory, JobPosting
 
 logger = create_development_logger(__name__)
 
@@ -81,6 +81,17 @@ DOMAIN_L2_TO_L1 = {
     "통신": "통신",
     # 미분류
     "미분류": "미분류",
+}
+
+# 레거시 L2 → 표준 L2 매핑 (이전 라벨링 배치에서 사용된 비표준 표기)
+LEGACY_L2_TO_STANDARD_L2 = {
+    "커머스/리테일": "커머스",
+    "콘텐츠/미디어": "미디어/엔터테인먼트",
+    "모빌리티/자동차": "자동차/모빌리티",
+    "금융/핀테크": "핀테크",
+    "보안/사이버보안": "보안",
+    "교육/에듀테크": "교육",
+    "바이오/헬스케어": "디지털헬스",
 }
 
 # L1 → L2 목록 (통계/검증용)
@@ -289,5 +300,282 @@ def import_labeled(
         f"{action}: applied={result['applied']}, "
         f"skipped={result['skipped']}, not_found={result['not_found']}, "
         f"invalid_domain={result['invalid_domain']}"
+    )
+    return result
+
+
+def normalize_domain_l2(
+    session: Session,
+    dry_run: bool = False,
+) -> dict:
+    """레거시 domain_l2 값을 표준 L2로 교정하고 domain_l1도 함께 채운다.
+
+    Returns:
+        {"normalized": int, "total_legacy": int}
+    """
+    postings = (
+        session.query(JobPosting)
+        .filter(JobPosting.domain_l2.in_(LEGACY_L2_TO_STANDARD_L2.keys()))
+        .all()
+    )
+
+    result = {"normalized": 0, "total_legacy": len(postings)}
+
+    batch_count = 0
+    for posting in postings:
+        standard_l2 = LEGACY_L2_TO_STANDARD_L2[posting.domain_l2]
+        l1 = DOMAIN_L2_TO_L1[standard_l2]
+
+        if not dry_run:
+            posting.domain_l2 = standard_l2
+            posting.domain_l1 = l1
+        result["normalized"] += 1
+        batch_count += 1
+
+        if not dry_run and batch_count >= BATCH_SIZE:
+            session.commit()
+            batch_count = 0
+
+    if not dry_run and batch_count > 0:
+        session.commit()
+
+    action = "Dry-run" if dry_run else "Normalized"
+    logger.info(
+        f"{action} domain_l2: normalized={result['normalized']}, "
+        f"total_legacy={result['total_legacy']}"
+    )
+    return result
+
+
+def backfill_domain_l1(
+    session: Session,
+    dry_run: bool = False,
+) -> dict:
+    """domain_l2는 있지만 domain_l1이 비어있는 레코드를 백필.
+
+    DOMAIN_L2_TO_L1 매핑을 사용하여 domain_l1을 자동으로 채운다.
+
+    Returns:
+        {"filled": int, "invalid": int, "total_missing": int}
+    """
+    postings = (
+        session.query(JobPosting)
+        .filter(
+            JobPosting.domain_l2.isnot(None),
+            JobPosting.domain_l2 != "",
+            or_(
+                JobPosting.domain_l1.is_(None),
+                JobPosting.domain_l1 == "",
+            ),
+        )
+        .all()
+    )
+
+    result = {"filled": 0, "invalid": 0, "total_missing": len(postings)}
+
+    batch_count = 0
+    for posting in postings:
+        l1 = DOMAIN_L2_TO_L1.get(posting.domain_l2)
+        if l1:
+            if not dry_run:
+                posting.domain_l1 = l1
+            result["filled"] += 1
+            batch_count += 1
+
+            if not dry_run and batch_count >= BATCH_SIZE:
+                session.commit()
+                batch_count = 0
+        else:
+            result["invalid"] += 1
+            logger.warning(
+                f"Unknown domain_l2 '{posting.domain_l2}' "
+                f"for posting {posting.posting_id}"
+            )
+
+    if not dry_run and batch_count > 0:
+        session.commit()
+
+    action = "Dry-run" if dry_run else "Backfilled"
+    logger.info(
+        f"{action} domain_l1: filled={result['filled']}, "
+        f"invalid={result['invalid']}, "
+        f"total_missing={result['total_missing']}"
+    )
+    return result
+
+
+def backfill_specialty(
+    session: Session,
+    dry_run: bool = False,
+    overwrite: bool = False,
+    limit: Optional[int] = None,
+) -> dict:
+    """기존 공고에 specialty_l1/l2를 백필.
+
+    ContentAnalyzer.classify_specialty를 사용하여
+    position + 본문(main_tasks, requirements, preferred)으로 직무를 분류한다.
+
+    Args:
+        session: DB 세션
+        dry_run: True면 실제 변경 없이 결과만 확인
+        overwrite: True면 이미 값이 있는 레코드도 재분류
+        limit: 처리할 최대 건수
+
+    Returns:
+        {"classified": int, "unclassified": int, "total_target": int}
+    """
+    from app.pipeline.normalizers.content import ContentAnalyzer
+
+    analyzer = ContentAnalyzer()
+    if not analyzer._specialty_rules:
+        logger.error("job_specialty.yaml을 로드할 수 없습니다")
+        return {"classified": 0, "unclassified": 0, "total_target": 0}
+
+    query = session.query(JobPosting)
+    if not overwrite:
+        query = query.filter(
+            or_(
+                JobPosting.specialty_l2.is_(None),
+                JobPosting.specialty_l2 == "",
+            )
+        )
+
+    query = query.order_by(JobPosting.id)
+    if limit:
+        query = query.limit(limit)
+
+    postings = query.all()
+    result = {"classified": 0, "unclassified": 0, "total_target": len(postings)}
+
+    batch_count = 0
+    for posting in postings:
+        # 본문 조합
+        parts = []
+        if posting.main_tasks:
+            parts.append(posting.main_tasks)
+        if posting.requirements:
+            parts.append(posting.requirements)
+        if posting.preferred:
+            parts.append(posting.preferred)
+        body_text = " ".join(parts)
+
+        position = posting.position or ""
+        l1, l2 = analyzer.classify_specialty(position, body_text)
+
+        if l2:
+            if not dry_run:
+                posting.specialty_l1 = l1
+                posting.specialty_l2 = l2
+            result["classified"] += 1
+            batch_count += 1
+
+            if not dry_run and batch_count >= BATCH_SIZE:
+                session.commit()
+                batch_count = 0
+        else:
+            result["unclassified"] += 1
+
+    if not dry_run and batch_count > 0:
+        session.commit()
+
+    action = "Dry-run" if dry_run else "Backfilled"
+    logger.info(
+        f"{action} specialty: classified={result['classified']}, "
+        f"unclassified={result['unclassified']}, "
+        f"total_target={result['total_target']}"
+    )
+    return result
+
+
+def backfill_experience_category(
+    session: Session,
+    dry_run: bool = False,
+    limit: Optional[int] = None,
+) -> dict:
+    """experience 텍스트는 있지만 experience_category_id가 NULL인 공고를 백필.
+
+    ExperienceNormalizer로 경력 텍스트를 파싱한 뒤,
+    ExperienceCategory를 찾거나 생성하여 연결한다.
+
+    Returns:
+        {"linked": int, "no_text": int, "failed": int, "total_target": int}
+    """
+    from app.pipeline.normalizers.experience import ExperienceNormalizer
+
+    normalizer = ExperienceNormalizer()
+
+    query = (
+        session.query(JobPosting)
+        .filter(JobPosting.experience_category_id.is_(None))
+        .order_by(JobPosting.id)
+    )
+    if limit:
+        query = query.limit(limit)
+
+    postings = query.all()
+    result = {
+        "linked": 0,
+        "no_text": 0,
+        "failed": 0,
+        "total_target": len(postings),
+    }
+
+    batch_count = 0
+    for posting in postings:
+        raw_exp = (posting.experience or "").strip()
+        if not raw_exp:
+            result["no_text"] += 1
+            continue
+
+        try:
+            norm = normalizer.normalize_experience(raw_exp)
+
+            # 기존 ExperienceCategory 조회
+            exp_cat = (
+                session.query(ExperienceCategory)
+                .filter_by(raw_experience=norm.raw_experience)
+                .first()
+            )
+
+            if not exp_cat:
+                exp_cat = ExperienceCategory(
+                    raw_experience=norm.raw_experience,
+                    standardized_experience=norm.standardized_experience,
+                    min_years=norm.min_years,
+                    max_years=norm.max_years,
+                    is_fresh_welcome=norm.is_fresh_welcome,
+                    confidence=norm.confidence,
+                    matching_method=norm.matching_method,
+                    manual_review=norm.manual_review,
+                )
+                if not dry_run:
+                    session.add(exp_cat)
+                    session.flush()
+
+            if not dry_run:
+                posting.experience_category_id = exp_cat.experience_category_id
+
+            result["linked"] += 1
+            batch_count += 1
+
+            if not dry_run and batch_count >= BATCH_SIZE:
+                session.commit()
+                batch_count = 0
+
+        except Exception as e:
+            result["failed"] += 1
+            logger.warning(
+                f"Failed to normalize experience for posting "
+                f"{posting.posting_id}: {e}"
+            )
+
+    if not dry_run and batch_count > 0:
+        session.commit()
+
+    action = "Dry-run" if dry_run else "Backfilled"
+    logger.info(
+        f"{action} experience_category: linked={result['linked']}, "
+        f"no_text={result['no_text']}, failed={result['failed']}, "
+        f"total_target={result['total_target']}"
     )
     return result

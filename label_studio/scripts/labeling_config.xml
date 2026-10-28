@@ -45,46 +45,48 @@
 
   <!-- ━━━ 1. 도메인 선택 ━━━ -->
   <Header value="1. 최종 도메인 분류" size="4"/>
+  <!-- value는 "L1 › L2" 표시용, alias(=domain_l2)가 annotation 결과로 저장됨.
+       목록은 backend/app/services/labeling.py DOMAIN_L2_TO_L1과 동일하게 유지. -->
   <Choices name="domain" toName="position_detail" choice="single" required="true" layout="select">
-    <Choice value="IT/소프트웨어"/>
-    <Choice value="게임"/>
-    <Choice value="건설/부동산"/>
-    <Choice value="공공/정책"/>
-    <Choice value="광고/마케팅"/>
-    <Choice value="교육"/>
-    <Choice value="국방/방산"/>
-    <Choice value="금융"/>
-    <Choice value="농업/식품"/>
-    <Choice value="로보틱스"/>
-    <Choice value="미디어/엔터테인먼트"/>
-    <Choice value="물류/유통"/>
-    <Choice value="바이오/제약"/>
-    <Choice value="반도체"/>
-    <Choice value="법률"/>
-    <Choice value="보안/사이버보안"/>
-    <Choice value="블록체인/웹3"/>
-    <Choice value="뷰티/화장품"/>
-    <Choice value="생활서비스"/>
-    <Choice value="스포츠"/>
-    <Choice value="식품/외식"/>
-    <Choice value="에너지"/>
-    <Choice value="여행/관광"/>
-    <Choice value="의료/헬스케어"/>
-    <Choice value="인사/HR"/>
-    <Choice value="자동차/모빌리티"/>
-    <Choice value="제조"/>
-    <Choice value="커머스"/>
-    <Choice value="통신"/>
-    <Choice value="무역/수출"/>
-    <Choice value="패션"/>
-    <Choice value="항공/우주"/>
-    <Choice value="해양/조선"/>
-    <Choice value="미분류"/>
+    <Choice value="IT › AI/딥테크" alias="AI/딥테크"/>
+    <Choice value="IT › SaaS/B2B" alias="SaaS/B2B"/>
+    <Choice value="IT › 보안" alias="보안"/>
+    <Choice value="IT › 소셜/커뮤니티" alias="소셜/커뮤니티"/>
+    <Choice value="금융 › 핀테크" alias="핀테크"/>
+    <Choice value="금융 › 전통금융" alias="전통금융"/>
+    <Choice value="금융 › 블록체인" alias="블록체인"/>
+    <Choice value="제조/하드웨어 › 반도체" alias="반도체"/>
+    <Choice value="제조/하드웨어 › 자동차/모빌리티" alias="자동차/모빌리티"/>
+    <Choice value="제조/하드웨어 › 로보틱스" alias="로보틱스"/>
+    <Choice value="제조/하드웨어 › 에너지" alias="에너지"/>
+    <Choice value="제조/하드웨어 › 항공/우주" alias="항공/우주"/>
+    <Choice value="제조/하드웨어 › 해양/조선" alias="해양/조선"/>
+    <Choice value="제조/하드웨어 › 일반제조" alias="일반제조"/>
+    <Choice value="바이오/의료 › 바이오/제약" alias="바이오/제약"/>
+    <Choice value="바이오/의료 › 디지털헬스" alias="디지털헬스"/>
+    <Choice value="바이오/의료 › 의료기기" alias="의료기기"/>
+    <Choice value="유통/소비재 › 커머스" alias="커머스"/>
+    <Choice value="유통/소비재 › 물류/유통" alias="물류/유통"/>
+    <Choice value="유통/소비재 › 식품/외식" alias="식품/외식"/>
+    <Choice value="유통/소비재 › 패션" alias="패션"/>
+    <Choice value="유통/소비재 › 뷰티/화장품" alias="뷰티/화장품"/>
+    <Choice value="유통/소비재 › 농업" alias="농업"/>
+    <Choice value="생활/전문서비스 › 교육" alias="교육"/>
+    <Choice value="생활/전문서비스 › 생활서비스" alias="생활서비스"/>
+    <Choice value="생활/전문서비스 › 여행/관광" alias="여행/관광"/>
+    <Choice value="생활/전문서비스 › 부동산/건설" alias="부동산/건설"/>
+    <Choice value="생활/전문서비스 › 인사/HR" alias="인사/HR"/>
+    <Choice value="생활/전문서비스 › 법률" alias="법률"/>
+    <Choice value="생활/전문서비스 › 광고/마케팅" alias="광고/마케팅"/>
+    <Choice value="생활/전문서비스 › 스포츠" alias="스포츠"/>
+    <Choice value="미디어/콘텐츠 › 미디어/엔터테인먼트" alias="미디어/엔터테인먼트"/>
+    <Choice value="게임 › 게임" alias="게임"/>
+    <Choice value="공공/국방 › 공공/정책" alias="공공/정책"/>
+    <Choice value="공공/국방 › 국방/방산" alias="국방/방산"/>
+    <Choice value="통신 › 통신" alias="통신"/>
+    <Choice value="미분류" alias="미분류"/>
   </Choices>
-  <Header value="↳ 목록에 없는 도메인이면 '미분류' 선택 후 아래에 입력" size="5"/>
-  <TextArea name="custom_domain" toName="position_detail"
-            placeholder="새 도메인명 입력 (예: 우주항공). 목록에서 선택했으면 비워두세요."
-            rows="1" maxSubmissions="1" editable="true" required="false"/>
+  <Header value="↳ 목록에 맞는 도메인이 없으면 '미분류' 선택 후 검수 메모에 제안 도메인을 남기세요" size="5"/>
 
   <!-- ━━━ 2. 기술 스택 선택 ━━━ -->
   <Header value="2. 최종 기술 스택 (AI 추출 결과를 확인하고 수정하세요)" size="4"/>
