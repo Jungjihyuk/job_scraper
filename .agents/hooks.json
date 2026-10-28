@@ -1,0 +1,44 @@
+{
+  "lanternspec": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "if command -v lantern >/dev/null 2>&1; then lantern hook session-start --agent antigravity; fi",
+        "timeout": 10
+      }
+    ],
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "if command -v lantern >/dev/null 2>&1; then lantern hook prompt --agent antigravity; fi",
+        "timeout": 10
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v lantern >/dev/null 2>&1; then lantern hook post-tool --agent antigravity; fi",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "if command -v lantern >/dev/null 2>&1; then lantern hook feedback --agent antigravity; fi",
+        "timeout": 10
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "if command -v lantern >/dev/null 2>&1; then lantern hook stop --agent antigravity; fi",
+        "timeout": 10
+      }
+    ]
+  }
+}

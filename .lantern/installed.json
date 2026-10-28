@@ -1,0 +1,42 @@
+{
+  "ci": false,
+  "files": {
+    ".agents/skills/l-adr/SKILL.md": "504a84b69c74845fdf1f5635bef79a816afc4778f2d252f5b20ac9a62eec4afe",
+    ".agents/skills/l-build/SKILL.md": "751302c3d0bae449278b7ab9ed1c371b7faa3121531181e86d3ee56b3e8d30a4",
+    ".agents/skills/l-check/SKILL.md": "6116f888f5c9bb65baf3db649e4d5361cf54e0fc30eb44f98a0df19cc7300e0c",
+    ".agents/skills/l-design/SKILL.md": "fdea52d2c828c89eb7b1204561192a5730922911dc38bb35d070294858cd58c8",
+    ".agents/skills/l-idea/SKILL.md": "6a79b66cd764c817e38655602561cfe680801a0dd68e9c63d1c3318b915130ee",
+    ".agents/skills/l-idea/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
+    ".agents/skills/l-init/SKILL.md": "8b1537af286b835d120047f95f5623fcc8b6b156563fddf9521eef40b42d61c8",
+    ".agents/skills/l-init/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
+    ".agents/skills/l-learn/SKILL.md": "3fe422402e28a7961389efa8de417bde0025db027f2fd70a8c3224def393b27f",
+    ".agents/skills/l-map/SKILL.md": "fb9b61d537e13b0937f77f7c20b84c5c080417c2849ed09f7e34506faa7eae17",
+    ".agents/skills/l-plan/SKILL.md": "da03cd1832f5e4d0935938d56e413095a5ed201dbd2f0fa39da065dfc9c798d2",
+    ".agents/skills/l-report/SKILL.md": "e075a590c3f1d1829cf41bfe843a030ae2581e0f13c615ce6b403f318d934b6c",
+    ".agents/skills/l-sync/SKILL.md": "ff0c5f2c25a9f7725ffda45b2fcffeadf1a25eb7c9ec3e8f94dd283b24a62970",
+    ".agents/skills/l-task/SKILL.md": "588fe99fe7b9285868672be28c38f52e869a3a76dadb0560dcac6e9bfe558f16",
+    ".agents/skills/l-template/SKILL.md": "d4584f7bc3400ba61d13aff143ea496542ac8a9a3188e6bd0404d37a08e4b7b5",
+    ".claude/skills/l-adr/SKILL.md": "21b8c7947a4693fc681e48dc162ce690b1350a95c7dc00f89763447ca0aef359",
+    ".claude/skills/l-build/SKILL.md": "e6f6e2b2725188c8b59fbceee55f6ab45cfc4b67d5f25034643c9821116db58d",
+    ".claude/skills/l-check/SKILL.md": "83cc656828365ad5bae95c9f07601f503938e068809203bcc983092abb06f75c",
+    ".claude/skills/l-design/SKILL.md": "08dca3bc9b26ca455d8117b03e72cd2a07870e523a1833b314be6174fe508778",
+    ".claude/skills/l-idea/SKILL.md": "9a825c425453ba8bf62d806208839469e6d6b8221c8c02eadadfcd2c16b199ce",
+    ".claude/skills/l-init/SKILL.md": "50ddc1aac9fe15ab58c0a662a0ead82459b238c3bf4a9489481889dc99ce1949",
+    ".claude/skills/l-learn/SKILL.md": "76b6a41e3abdfad7e90f5b9973f63882044dbe47a14383220487f0492450e7a2",
+    ".claude/skills/l-map/SKILL.md": "5114588b0d735ba869933df52b0144ca050521d012842fb778d3ee3d7a88ad52",
+    ".claude/skills/l-plan/SKILL.md": "af82abf8c65df8737ba0b1ec1f58ec56483841e9d3b73ea7f1a093f13c2754fe",
+    ".claude/skills/l-report/SKILL.md": "d97a24c6afc1a758e9c56df7831b985608c1b79b516b5e0dcde8971945da2642",
+    ".claude/skills/l-sync/SKILL.md": "4273f7fdcd9b626f3855e3fe76eacb7f55889cebdc98a6edd45fa30e88c6b09c",
+    ".claude/skills/l-task/SKILL.md": "b13d4363218afc6015527267ef98e7c715a8580dbbc9f98949ee9e83df3d71f9",
+    ".claude/skills/l-template/SKILL.md": "ef6182c407f9d443c18a7d71c719454ebcc6a7b77874ecaf428b7f5ee926cb9b"
+  },
+  "language": "ko",
+  "mcp": false,
+  "templates": {},
+  "tools": [
+    "claude",
+    "codex",
+    "antigravity"
+  ],
+  "version": "0.1.2"
+}

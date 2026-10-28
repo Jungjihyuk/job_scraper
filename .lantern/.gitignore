@@ -1,0 +1,5 @@
+# LanternSpec 로컬 상태 — 개인 기록은 올리지 않는다
+runs.jsonl
+runs-state/
+hook-state/
+pack/
