@@ -1,5 +1,5 @@
 {
-  "ci": false,
+  "ci": true,
   "files": {
     ".agents/skills/l-adr/SKILL.md": "504a84b69c74845fdf1f5635bef79a816afc4778f2d252f5b20ac9a62eec4afe",
     ".agents/skills/l-build/SKILL.md": "e621075c40d431a3d70a3c2c62232178f022804bf494da7b8681899abd045af4",
@@ -28,11 +28,113 @@
     ".claude/skills/l-report/SKILL.md": "d97a24c6afc1a758e9c56df7831b985608c1b79b516b5e0dcde8971945da2642",
     ".claude/skills/l-sync/SKILL.md": "4273f7fdcd9b626f3855e3fe76eacb7f55889cebdc98a6edd45fa30e88c6b09c",
     ".claude/skills/l-task/SKILL.md": "b13d4363218afc6015527267ef98e7c715a8580dbbc9f98949ee9e83df3d71f9",
-    ".claude/skills/l-template/SKILL.md": "ef6182c407f9d443c18a7d71c719454ebcc6a7b77874ecaf428b7f5ee926cb9b"
+    ".claude/skills/l-template/SKILL.md": "ef6182c407f9d443c18a7d71c719454ebcc6a7b77874ecaf428b7f5ee926cb9b",
+    ".github/workflows/lanternspec.yml": "0ec4a49e8d9a388fa8658d094b81f95ae906c9e73e5b1246756b6a8b48716836"
   },
   "language": "ko",
   "mcp": false,
-  "templates": {},
+  "templates": {
+    "ADR": {
+      "based_on": "1.0.0",
+      "sha256": "2116b450c7a01ae335ffa0175ec3dc33ef944cc2926537870e79a4c7e363f9bd"
+    },
+    "API": {
+      "based_on": "1.0.0",
+      "sha256": "9e2b6ee590a0053540bd90aacd96eaf0ab71fd399a4c71fe228629dbc0794d13"
+    },
+    "_meta/enums.yaml": {
+      "based_on": "1",
+      "sha256": "3074e5f3d755e32fd3903bf9aaf67f275400669121958c366684fa59759552b9"
+    },
+    "개발문서 MOC": {
+      "based_on": "1.0.0",
+      "sha256": "fd7fb8bd380482721c513d715d9be9ffd005893421db9f738b59adf85e928ccf"
+    },
+    "기능 목록": {
+      "based_on": "1.0.0",
+      "sha256": "66bdf7d96a8a17c7301cd694545ea7d05dd12d0a9fb80b44965d6a016ec4850f"
+    },
+    "기록": {
+      "based_on": "1.0.0",
+      "sha256": "5632e91d71ba0ca7e55511e1cf91a1bf6ae8ac9683e3b9072adee93b5859c8ab"
+    },
+    "기존 문서 지도": {
+      "based_on": "1.0.0",
+      "sha256": "d224f5e501a6b595406ff600a94c7427fec64a8aee51b4a96ba4e1647133748d"
+    },
+    "기획": {
+      "based_on": "1.0.0",
+      "sha256": "3a90a1ee126736983a25a2ff51a2c8603d8651556e2b7e5adb1b6007c79ad169"
+    },
+    "데이터": {
+      "based_on": "1.0.0",
+      "sha256": "e95b0975e6c98032f25a2e0f13d2f6213444e5c7965d63d0fc94b2e8afe34bcd"
+    },
+    "배포": {
+      "based_on": "1.0.0",
+      "sha256": "6f4b4293fcb5b9bc12478fe98e52255b456d389fa8b970fb29411ecea14109e5"
+    },
+    "부채 카드": {
+      "based_on": "1.0.0",
+      "sha256": "417bc8e456647da5f171ff4c8cc2c548ef2856bd28170d1b0a3b6e1be171f65f"
+    },
+    "서버 배포 · 운영": {
+      "based_on": "1.0.0",
+      "sha256": "64e00ce11090e5b70e0a97654c65a00d66cb70708265f98c10d955dac01e3f6e"
+    },
+    "설계": {
+      "based_on": "1.0.0",
+      "sha256": "e610bcc1105239dae42e4b0a0ad55428979b9fce3aeb1c2cc5e548f7b7b69fc5"
+    },
+    "세션 기록": {
+      "based_on": "1.0.0",
+      "sha256": "6877c61354e618a0f31c6c2e6cd94f114c8457a3a37780dcff45487fef9f5610"
+    },
+    "시스템 구조": {
+      "based_on": "1.0.0",
+      "sha256": "33184bd6d35cec8675f667f313e2be62d66f1e5cb782fe80a065511a24686e8f"
+    },
+    "아는 기술": {
+      "based_on": "1.0.0",
+      "sha256": "9a96e83c111026611fee025d077ea7a9498c2b787bfb5a4522634d2c2f5fc88a"
+    },
+    "아이디어": {
+      "based_on": "1.0.0",
+      "sha256": "e2c4df85053b8e8c30a6eb2610f6be24f951fb61e34fded6c3d5b075c643a381"
+    },
+    "역량 카드": {
+      "based_on": "1.0.0",
+      "sha256": "643806a0e7c6a84ceff9d334ca4cb44ce0dc38884cd09977444581179eb16bff"
+    },
+    "작업 단위 기록": {
+      "based_on": "1.0.0",
+      "sha256": "ddde2ac22a5885d33ce2dd9471508079a676a3ff1e681bae1d7f90037898654a"
+    },
+    "프로젝트 정의서": {
+      "based_on": "1.0.0",
+      "sha256": "4ce134e29ae8d853a4bfa1a48d367c3bebc8849680b026d2878905e6c9e151cc"
+    },
+    "플랫폼 연동": {
+      "based_on": "1.0.0",
+      "sha256": "1d940334521684f91cc461543cbe79ed41bda401307cddfd55c339a3aab31953"
+    },
+    "할 일": {
+      "based_on": "1.0.0",
+      "sha256": "5049d999d1c5ad1df001aa1df557b8ccb6abcc39bada2e19d7bf5f009b16d27b"
+    },
+    "협업 규칙": {
+      "based_on": "1.0.0",
+      "sha256": "0843ca36e97b61aa3304db93f3cb2b86b58b8269ab0289f165981c00854ae6f8"
+    },
+    "화면": {
+      "based_on": "1.0.0",
+      "sha256": "c0d236cda0499b4c1933b653596b4d17d496c27b6910b4cab40ad163d135359e"
+    },
+    "회의록": {
+      "based_on": "1.0.0",
+      "sha256": "3511665fd2149c1d74641991eae207fe620f055e3f1128c5b1ca5ffc437c342d"
+    }
+  },
   "tools": [
     "claude",
     "codex",
