@@ -6,11 +6,6 @@ authors = [{ name = "Jihyeok Jeong", email = "wlgurdlcjswo@naver.com" }]
 requires-python = ">=3.10"
 # readme is at project root (../README.md), omitted for Docker compatibility
 dependencies = [
-    "isort>=5.13.2,<6",
-    "black>=24.10.0,<25",
-    "flake8>=7.1.1,<8",
-    "flake8-mutable>=1.2.0,<2",
-    "flake8-pyproject>=1.2.3,<2",
     "beautifulsoup4>=4.12.3,<5",
     "python-dotenv>=1.0.1,<2",
     "requests>=2.32.3,<3",
@@ -48,41 +43,28 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
 
-[tool.isort]
-profile = "google"            # Use the Google style guide for import sorting
-line_length = 80    
-multi_line_output = 3         # Set multi-line import statement output style (3: vertical hanging indent)
-include_trailing_comma = true # Add trailing commas to multi-line imports
-force_grid_wrap = 0           # Do not force line wrapping for multi-line imports
-use_parentheses = true        # Use parentheses for multi-line imports (using () in multi-line imports) 
+[tool.ruff]
+line-length = 80
+target-version = "py310"
 
-[tool.black]
-line-length = 80           # Set maximum line length to 80 characters
-target-version = ['py310'] # Specify the target Python version 
-include = '\.pyi?$'        # Apply black to Python files and Python stub files
-exclude = '''              # Exclude directories or file patterns from black formatting
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-''' 
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ANN", "D"]
+ignore = ["E203", "ANN401"]
 
-[tool.flake8]
-max-line-length = 90 
-extend-ignore = ["E203"]   # Ignore error including whitespace before colon
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
-plugins = [
-    "flake8_mutable"       # Prevent the use of mutable objects as default arguments in functions
-]
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.pyright]
+typeCheckingMode = "standard"
+pythonVersion = "3.10"
+include = ["app"]
 
 [dependency-groups]
 dev = [
+    "pyright>=1.1.414",
     "pytest-asyncio>=1.3.0",
+    "ruff>=0.17.3",
 ]
