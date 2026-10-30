@@ -49,6 +49,14 @@ def get_job_selection():
         
 async def main(opt):
     """🚀 메인 실행 함수"""
+    # 수집 모드 결정
+    if opt.incremental:
+        scrape_mode = "incremental"
+    elif opt.full:
+        scrape_mode = "full"
+    else:
+        scrape_mode = "default"
+
     logger.info("🚀 Starting Pipeline URL Collection + Validation Test...")
     config = PipelineConfig(
         job=opt.job,
@@ -58,17 +66,20 @@ async def main(opt):
         batch_size=10,
         request_timeout=10,
         enable_duplicate_check=True,
+        scrape_mode=scrape_mode,
         # 저장 설정
         save_to_database=True,
-        save_to_local=True,  # 로컬 JSON 저장도 활성화
+        save_to_local=True,
         local_output_format="json",
         local_output_path="logs/"
     )
+    MODE_LABELS = {"default": f"Default (max {config.max_scrolls} scrolls)",
+                   "incremental": "Incremental (조기 종료)",
+                   "full": "Full (페이지 끝까지)"}
     logger.info(f"⚙️ Pipeline Config:")
     logger.info(f"   🎯 Job: {config.job}")
-    logger.info(f"   🔄 Max Scrolls: {config.max_scrolls}")
+    logger.info(f"   📦 Mode: {MODE_LABELS[scrape_mode]}")
     logger.info(f"   ⏱️ Scroll Delay: {config.scroll_delay}ms")
-    logger.info(f"   🔍 Duplicate Check: {config.enable_duplicate_check}")
 
     # PipelineManager 사용
     pipeline_manager = PipelineManager(config)
@@ -104,6 +115,18 @@ def parse_opt(known=False):
         type=int,
         default=2000,
         help="Delay between scrolls in milliseconds (default: 2000)"
+    )
+    # 수집 모드 (상호 배타)
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "--incremental",
+        action="store_true",
+        help="Incremental mode: 신규 공고가 거의 없으면 조기 종료"
+    )
+    mode_group.add_argument(
+        "--full",
+        action="store_true",
+        help="Full mode: 페이지 끝까지 스크롤 (max-scrolls 무시)"
     )
     parser.add_argument(
         "--debug",

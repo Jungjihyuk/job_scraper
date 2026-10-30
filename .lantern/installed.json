@@ -1,0 +1,146 @@
+{
+  "ci": true,
+  "files": {
+    ".agents/skills/l-adr/SKILL.md": "9cfb6ef6dc9763573c90459d43c6892a5d336c62f4747f8cc67b57dde78e80fe",
+    ".agents/skills/l-build/SKILL.md": "e621075c40d431a3d70a3c2c62232178f022804bf494da7b8681899abd045af4",
+    ".agents/skills/l-check/SKILL.md": "6116f888f5c9bb65baf3db649e4d5361cf54e0fc30eb44f98a0df19cc7300e0c",
+    ".agents/skills/l-design/SKILL.md": "3bccd06af720500542b82e448aeede6116f8a5834d87ebbbc9775ad7db29a507",
+    ".agents/skills/l-idea/SKILL.md": "6a79b66cd764c817e38655602561cfe680801a0dd68e9c63d1c3318b915130ee",
+    ".agents/skills/l-idea/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
+    ".agents/skills/l-init/SKILL.md": "8b1537af286b835d120047f95f5623fcc8b6b156563fddf9521eef40b42d61c8",
+    ".agents/skills/l-init/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
+    ".agents/skills/l-learn/SKILL.md": "d30513965b208cb07ad770f5ab5e3aca939b3b26fa9e9896e3b664fda046b047",
+    ".agents/skills/l-map/SKILL.md": "fb9b61d537e13b0937f77f7c20b84c5c080417c2849ed09f7e34506faa7eae17",
+    ".agents/skills/l-plan/SKILL.md": "7b95a1dc08f1f4fd484b4c8409b755d74c6d5eabfb1eee5177f322e7dcd9a937",
+    ".agents/skills/l-report/SKILL.md": "8d0f522949f5dfdebdc3e9ebe7ba60fd6d3475ba7245bd513affcf80b86de0e0",
+    ".agents/skills/l-resume/SKILL.md": "2d2e86a0a9c51ca8ed16416ad7424dea870b9eba6d0406e283a52c61d500508c",
+    ".agents/skills/l-sync/SKILL.md": "ff0c5f2c25a9f7725ffda45b2fcffeadf1a25eb7c9ec3e8f94dd283b24a62970",
+    ".agents/skills/l-task/SKILL.md": "71546d35ad790cf07159e26c484fe558ec1cc5239b97e8778700a24031d47833",
+    ".agents/skills/l-template/SKILL.md": "d4584f7bc3400ba61d13aff143ea496542ac8a9a3188e6bd0404d37a08e4b7b5",
+    ".claude/skills/l-adr/SKILL.md": "0dc50f977063aa91d7fc7624671c581944cd60fd0c8bc0576be61f445af7b8aa",
+    ".claude/skills/l-build/SKILL.md": "561808a63d6d6d934319ce320f7cc0a14404611156d7a4aceb00997f66a25759",
+    ".claude/skills/l-check/SKILL.md": "83cc656828365ad5bae95c9f07601f503938e068809203bcc983092abb06f75c",
+    ".claude/skills/l-design/SKILL.md": "11a623cc4bce6bae2a72cdd1b6ff2f47620e1511f9348f4a4b80b2dffb74e7be",
+    ".claude/skills/l-idea/SKILL.md": "9a825c425453ba8bf62d806208839469e6d6b8221c8c02eadadfcd2c16b199ce",
+    ".claude/skills/l-init/SKILL.md": "50ddc1aac9fe15ab58c0a662a0ead82459b238c3bf4a9489481889dc99ce1949",
+    ".claude/skills/l-learn/SKILL.md": "9cc868cca5ea0931d5b5b02fd0f4bcb87a676fdab062ba7de722fa65f0ffdde0",
+    ".claude/skills/l-map/SKILL.md": "5114588b0d735ba869933df52b0144ca050521d012842fb778d3ee3d7a88ad52",
+    ".claude/skills/l-plan/SKILL.md": "9370898f7ee0f47be5f7782c9a11e7f76450d50553e11d41c181eacf5004f7ce",
+    ".claude/skills/l-report/SKILL.md": "dce6b29c25fa20e23da417fbecde14a1e9ad903d3eb888cdba12114a1a8122b5",
+    ".claude/skills/l-resume/SKILL.md": "336913c25491309b6f810035f8e41c8d4ca863a820cc6a020774e9f8ae2d5209",
+    ".claude/skills/l-sync/SKILL.md": "4273f7fdcd9b626f3855e3fe76eacb7f55889cebdc98a6edd45fa30e88c6b09c",
+    ".claude/skills/l-task/SKILL.md": "fc7d4efb53e2ce2c69cd9c58413f5e2847a2d8800900044e93a8ca09c8c16fcf",
+    ".claude/skills/l-template/SKILL.md": "ef6182c407f9d443c18a7d71c719454ebcc6a7b77874ecaf428b7f5ee926cb9b",
+    ".github/workflows/lanternspec.yml": "0ec4a49e8d9a388fa8658d094b81f95ae906c9e73e5b1246756b6a8b48716836"
+  },
+  "language": "ko",
+  "mcp": false,
+  "templates": {
+    "ADR": {
+      "based_on": "1.0.0",
+      "sha256": "2116b450c7a01ae335ffa0175ec3dc33ef944cc2926537870e79a4c7e363f9bd"
+    },
+    "API": {
+      "based_on": "1.0.0",
+      "sha256": "9e2b6ee590a0053540bd90aacd96eaf0ab71fd399a4c71fe228629dbc0794d13"
+    },
+    "_meta/enums.yaml": {
+      "based_on": "1",
+      "sha256": "3074e5f3d755e32fd3903bf9aaf67f275400669121958c366684fa59759552b9"
+    },
+    "개발문서 MOC": {
+      "based_on": "1.0.0",
+      "sha256": "fd7fb8bd380482721c513d715d9be9ffd005893421db9f738b59adf85e928ccf"
+    },
+    "기능 목록": {
+      "based_on": "1.0.0",
+      "sha256": "66bdf7d96a8a17c7301cd694545ea7d05dd12d0a9fb80b44965d6a016ec4850f"
+    },
+    "기록": {
+      "based_on": "1.0.0",
+      "sha256": "5632e91d71ba0ca7e55511e1cf91a1bf6ae8ac9683e3b9072adee93b5859c8ab"
+    },
+    "기존 문서 지도": {
+      "based_on": "1.0.0",
+      "sha256": "d224f5e501a6b595406ff600a94c7427fec64a8aee51b4a96ba4e1647133748d"
+    },
+    "기획": {
+      "based_on": "1.0.0",
+      "sha256": "3a90a1ee126736983a25a2ff51a2c8603d8651556e2b7e5adb1b6007c79ad169"
+    },
+    "데이터": {
+      "based_on": "1.0.0",
+      "sha256": "e95b0975e6c98032f25a2e0f13d2f6213444e5c7965d63d0fc94b2e8afe34bcd"
+    },
+    "배포": {
+      "based_on": "1.0.0",
+      "sha256": "6f4b4293fcb5b9bc12478fe98e52255b456d389fa8b970fb29411ecea14109e5"
+    },
+    "부채 카드": {
+      "based_on": "1.0.0",
+      "sha256": "417bc8e456647da5f171ff4c8cc2c548ef2856bd28170d1b0a3b6e1be171f65f"
+    },
+    "서버 배포 · 운영": {
+      "based_on": "1.0.0",
+      "sha256": "64e00ce11090e5b70e0a97654c65a00d66cb70708265f98c10d955dac01e3f6e"
+    },
+    "설계": {
+      "based_on": "1.0.0",
+      "sha256": "e610bcc1105239dae42e4b0a0ad55428979b9fce3aeb1c2cc5e548f7b7b69fc5"
+    },
+    "세션 기록": {
+      "based_on": "1.0.0",
+      "sha256": "6877c61354e618a0f31c6c2e6cd94f114c8457a3a37780dcff45487fef9f5610"
+    },
+    "시스템 구조": {
+      "based_on": "1.0.0",
+      "sha256": "33184bd6d35cec8675f667f313e2be62d66f1e5cb782fe80a065511a24686e8f"
+    },
+    "아는 기술": {
+      "based_on": "1.0.0",
+      "sha256": "9a96e83c111026611fee025d077ea7a9498c2b787bfb5a4522634d2c2f5fc88a"
+    },
+    "아이디어": {
+      "based_on": "1.0.0",
+      "sha256": "e2c4df85053b8e8c30a6eb2610f6be24f951fb61e34fded6c3d5b075c643a381"
+    },
+    "역량 카드": {
+      "based_on": "1.0.0",
+      "sha256": "643806a0e7c6a84ceff9d334ca4cb44ce0dc38884cd09977444581179eb16bff"
+    },
+    "작업 나누기 기준": {
+      "based_on": "1.1.0",
+      "sha256": "d8cd321c3df1dbe5db7e04a303dc484d724d23019b7a066c694d3e699f71bd07"
+    },
+    "프로젝트 정의서": {
+      "based_on": "1.0.0",
+      "sha256": "4ce134e29ae8d853a4bfa1a48d367c3bebc8849680b026d2878905e6c9e151cc"
+    },
+    "플랫폼 연동": {
+      "based_on": "1.0.0",
+      "sha256": "1d940334521684f91cc461543cbe79ed41bda401307cddfd55c339a3aab31953"
+    },
+    "할 일": {
+      "based_on": "1.0.1",
+      "sha256": "078778e3594da055d3919777793f5f016b394920ef5f22b4e183831f8d836749"
+    },
+    "협업 규칙": {
+      "based_on": "1.0.1",
+      "sha256": "b21b99e96303ff7b18e637b076b929b53c18f001b56dafcef0adf530520520dd"
+    },
+    "화면": {
+      "based_on": "1.0.0",
+      "sha256": "c0d236cda0499b4c1933b653596b4d17d496c27b6910b4cab40ad163d135359e"
+    },
+    "회의록": {
+      "based_on": "1.0.0",
+      "sha256": "3511665fd2149c1d74641991eae207fe620f055e3f1128c5b1ca5ffc437c342d"
+    }
+  },
+  "tools": [
+    "claude",
+    "codex",
+    "antigravity"
+  ],
+  "version": "0.2.2"
+}

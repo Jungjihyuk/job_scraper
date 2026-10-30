@@ -5,6 +5,7 @@ CSV 기반 라벨 Import/Export API 엔드포인트.
 import io
 import tempfile
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/api/labeling", tags=["Labeling"])
 
 @router.get("/export")
 def export_csv(
-    field: str = Query(None, enum=["domain", "technology"]),
+    field: Literal["domain", "technology"] | None = Query(None),
     limit: int = Query(500, ge=1, le=10000),
     include_all: bool = Query(False),
     db: Session = Depends(get_db_session),

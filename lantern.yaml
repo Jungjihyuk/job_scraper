@@ -1,0 +1,57 @@
+# lantern.yaml — 이 프로젝트가 어떤 프로젝트인지 (/l-init의 답). 사람이 직접 고쳐도 된다.
+lantern: 1                  # 이 파일 형식의 버전
+
+project:
+  name: job_scraper
+  origin: brownfield        # greenfield(새로) | brownfield(기존 코드 있음)
+  team: solo              # solo(1인) | team(2인 이상)
+  members: []            # team일 때 담당자 후보
+  clients: [web]          # web | desktop | mobile — 여러 개 가능
+  server: custom            # none(서버 없음) | external(Supabase · Firebase 같은 백엔드 서비스) | custom(서버 코드를 직접 작성 — 어디에 띄우든)
+  language: ko              # 문서 · 안내의 언어
+  comment_language: ko    # 코드 주석(docstring · 주석)의 언어 — ko | en, 비우면 language를 따름
+  kind: service              # script | cli | library | service | data — 설계 원칙을 고르는 기준
+  external: true         # 바깥 도구 · 서비스(AI 도구 · 결제 · 외부 API 등)에 붙나
+  languages: [python, typescript]        # 코드 컨벤션을 고를 언어 (go, python, rust, swift, typescript)
+  code_size: medium         # small | medium | large — 잰 값 (lantern principles detect). 경계를 넘으면 lantern doctor가 올릴지 묻는다
+
+docs:
+  root: docs/
+  remote: local  # shared(같이 올림) | local(문서는 원격에 안 올림) — 바꿀 때는 lantern docs-mode
+
+knowledge:                  # 배우는 선로. 없으면 이 블록을 지운다
+  type: obsidian            # obsidian | folder(아무 Markdown 폴더)
+  path: /Users/jihyeok/Documents/MY_BRAIN
+  write: propose_only            # direct(승인 후 바로 씀) | propose_only(초안 파일만)
+
+design:
+  tool: claude-design       # claude-design | figma | canva (각 도구의 MCP) | none
+  approval: required  # required(항상 승인) | auto(작은 설계는 건너뜀) | off
+
+git:
+  hooks: warn              # warn(경고만) | block(막기) — 커밋 메시지 · 스키마 기록 · 문서 양식 검사에만 적용
+  base: dev                 # 작업 브랜치를 머지할 기준 브랜치 (main | dev …)
+
+idea:
+  capture: manual           # manual(직접 부를 때만) | ask(알아채고 묻기) | auto(알아서 기록)
+plan:
+  max_questions: 3         # 한 번에 묻는 질문 수 (최소 1)
+  ac_format: gwt           # gwt(상황·행동·결과) | simple(~하면 ~된다)
+  ui_reference: 'off'         # off | required(화면 작업은 시안이 있어야 진행)
+learn:
+  detect: manual            # manual(불릴 때만) | ask(대화 중 질문마다 묻기) | auto(새 기술은 제안, 카드 있으면 바로 셈)
+  max_candidates: 3        # 한 번에 보여 줄 부채 후보 수 (최소 1)
+  verify: self             # self(스스로 표시) | explain(한 줄 설명해 보기)
+build:
+  report_cycle: work        # work(작업마다) | criterion(수락 기준마다) | task(할 일마다) — 문제가 생기면 언제든 바로 보고
+  merge_approval: required  # required(반영 전 승인) | auto(반영 후 요약 보고)
+  loop: 'off'                # off(할 일 안의 작은 반복만) | on(수락 기준 테스트가 통과할 때까지 작업 전체를 다시) — lantern harness suggest
+  loop_limit: 3           # 큰 반복 최대 횟수
+  test: cd backend && uv run pytest  # 테스트 명령 (work finish · scan --tests)
+  format: cd backend && uv run ruff format --check app/  # 포맷 명령 (고친 뒤 돌린다)
+  lint: cd backend && uv run ruff check app/  # 린트 명령 (lantern lint · /l-build · CI)
+  typecheck: cd backend && uv run pyright app/  # 타입 검사 명령 (lantern lint · /l-build · CI)
+check:
+  max_lines: 300            # 이보다 길면 나누자고 경고 (막지는 않음)
+report:
+  views: [kanban, timeline, debt]

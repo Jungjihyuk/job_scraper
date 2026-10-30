@@ -25,10 +25,17 @@ async def start_scraping(
     """스크래핑 파이프라인 시작"""
     try:
         # 백그라운드에서 파이프라인 실행
-        background_tasks.add_task(run_pipeline, request.scraper_type, request.job)
+        background_tasks.add_task(
+            run_pipeline, request.scraper_type, request.job, request.scrape_mode
+        )
 
+        mode_labels = {
+            "default": "기본",
+            "incremental": "증분 수집",
+            "full": "전체 수집",
+        }
         return ScrapingResponse(
-            message="스크래핑이 시작되었습니다",
+            message=f"스크래핑이 시작되었습니다 ({mode_labels.get(request.scrape_mode, request.scrape_mode)})",
             scraper_type=request.scraper_type,
             job=request.job,
         )
@@ -36,34 +43,42 @@ async def start_scraping(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def run_pipeline(scraper_type: str, job: str):
+async def run_pipeline(scraper_type: str, job: str, scrape_mode: str = "default"):
     """실제 파이프라인 실행 함수"""
     try:
         # WebSocket 매니저 import
         from app.ws.manager import manager
 
+        mode_labels = {
+            "default": "기본",
+            "incremental": "증분 수집",
+            "full": "전체 수집",
+        }
+
         # 시작 메시지
         await manager.send_message(
             json.dumps(
-                {"type": "status", "message": f"🚀 스크래핑 시작: {job}", "progress": 0}
+                {
+                    "type": "status",
+                    "message": f"🚀 스크래핑 시작: {job} ({mode_labels.get(scrape_mode, scrape_mode)})",
+                    "progress": 0,
+                }
             )
         )
 
-        # 디버깅 메시지
-        await manager.send_message(
-            json.dumps(
-                {"type": "log", "message": f"명령어 실행: uv run backend/cli.py"}
-            )
-        )
-
-        # uv run 명령어로 파이프라인 실행 (환경변수로 직무 전달)
+        # uv run 명령어로 파이프라인 실행 (환경변수로 직무/모드 전달)
         import os
 
         env = os.environ.copy()
-        env["SELECTED_JOB"] = job  # 환경변수로 직무 전달
-        env["PYTHONUNBUFFERED"] = "1"  # Python 출력 버퍼링 비활성화
+        env["SELECTED_JOB"] = job
+        env["SCRAPE_MODE"] = scrape_mode
+        env["PYTHONUNBUFFERED"] = "1"
 
-        cmd = ["uv", "run", "backend/cli.py"]
+        cmd = ["uv", "run", "app/cli.py"]
+        if scrape_mode == "incremental":
+            cmd.append("--incremental")
+        elif scrape_mode == "full":
+            cmd.append("--full")
 
         process = await asyncio.create_subprocess_exec(
             *cmd,
