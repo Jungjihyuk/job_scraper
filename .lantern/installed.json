@@ -13,6 +13,7 @@
     ".agents/skills/l-map/SKILL.md": "fb9b61d537e13b0937f77f7c20b84c5c080417c2849ed09f7e34506faa7eae17",
     ".agents/skills/l-plan/SKILL.md": "7b95a1dc08f1f4fd484b4c8409b755d74c6d5eabfb1eee5177f322e7dcd9a937",
     ".agents/skills/l-report/SKILL.md": "8d0f522949f5dfdebdc3e9ebe7ba60fd6d3475ba7245bd513affcf80b86de0e0",
+    ".agents/skills/l-resume/SKILL.md": "2d2e86a0a9c51ca8ed16416ad7424dea870b9eba6d0406e283a52c61d500508c",
     ".agents/skills/l-sync/SKILL.md": "ff0c5f2c25a9f7725ffda45b2fcffeadf1a25eb7c9ec3e8f94dd283b24a62970",
     ".agents/skills/l-task/SKILL.md": "71546d35ad790cf07159e26c484fe558ec1cc5239b97e8778700a24031d47833",
     ".agents/skills/l-template/SKILL.md": "d4584f7bc3400ba61d13aff143ea496542ac8a9a3188e6bd0404d37a08e4b7b5",
@@ -26,6 +27,7 @@
     ".claude/skills/l-map/SKILL.md": "5114588b0d735ba869933df52b0144ca050521d012842fb778d3ee3d7a88ad52",
     ".claude/skills/l-plan/SKILL.md": "9370898f7ee0f47be5f7782c9a11e7f76450d50553e11d41c181eacf5004f7ce",
     ".claude/skills/l-report/SKILL.md": "dce6b29c25fa20e23da417fbecde14a1e9ad903d3eb888cdba12114a1a8122b5",
+    ".claude/skills/l-resume/SKILL.md": "336913c25491309b6f810035f8e41c8d4ca863a820cc6a020774e9f8ae2d5209",
     ".claude/skills/l-sync/SKILL.md": "4273f7fdcd9b626f3855e3fe76eacb7f55889cebdc98a6edd45fa30e88c6b09c",
     ".claude/skills/l-task/SKILL.md": "fc7d4efb53e2ce2c69cd9c58413f5e2847a2d8800900044e93a8ca09c8c16fcf",
     ".claude/skills/l-template/SKILL.md": "ef6182c407f9d443c18a7d71c719454ebcc6a7b77874ecaf428b7f5ee926cb9b",
@@ -140,5 +142,5 @@
     "codex",
     "antigravity"
   ],
-  "version": "0.2.0"
+  "version": "0.2.2"
 }
