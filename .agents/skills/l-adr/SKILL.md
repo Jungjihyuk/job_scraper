@@ -1,6 +1,6 @@
 ---
 name: l-adr
-description: 결정 기록(ADR) — 되돌리기 어려운 결정(DB · 프레임워크 · 인증 방식 · 외부 서비스 · 데이터 구조 변경 · 공개 API 변경 · 방향을 바꾼 결정)을 배경 · 검토한 선택지(장단점) · 결정 · 결과/영향 · 상태로 3. 현재 상태/규칙 · 결정 기록/ADR-NNN 에 남긴다. Use when an important, hard-to-reverse decision is made, or /l-design · /l-build · /l-sync hit one.
+description: 결정 기록(ADR) — 되돌리기 어려운 결정(DB · 프레임워크 · 인증 방식 · 외부 서비스 · 데이터 구조 변경 · 공개 API 변경 · 방향을 바꾼 결정)을 배경 · 검토한 선택지(장단점) · 결정 · 결과/영향 · 상태로 3. 현재 상태/결정 기록/ADR-NNN 에 남긴다. Use when an important, hard-to-reverse decision is made, or /l-design · /l-build · /l-sync hit one.
 ---
 <!-- lanternspec가 생성한 파일 — 원본: lanternspec/resources/skills. `lantern upgrade`가 다시 만든다 (직접 고치면 upgrade가 건너뜀) -->
 

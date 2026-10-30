@@ -1,7 +1,7 @@
 {
   "ci": true,
   "files": {
-    ".agents/skills/l-adr/SKILL.md": "504a84b69c74845fdf1f5635bef79a816afc4778f2d252f5b20ac9a62eec4afe",
+    ".agents/skills/l-adr/SKILL.md": "9cfb6ef6dc9763573c90459d43c6892a5d336c62f4747f8cc67b57dde78e80fe",
     ".agents/skills/l-build/SKILL.md": "e621075c40d431a3d70a3c2c62232178f022804bf494da7b8681899abd045af4",
     ".agents/skills/l-check/SKILL.md": "6116f888f5c9bb65baf3db649e4d5361cf54e0fc30eb44f98a0df19cc7300e0c",
     ".agents/skills/l-design/SKILL.md": "3bccd06af720500542b82e448aeede6116f8a5834d87ebbbc9775ad7db29a507",
@@ -11,12 +11,12 @@
     ".agents/skills/l-init/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
     ".agents/skills/l-learn/SKILL.md": "d30513965b208cb07ad770f5ab5e3aca939b3b26fa9e9896e3b664fda046b047",
     ".agents/skills/l-map/SKILL.md": "fb9b61d537e13b0937f77f7c20b84c5c080417c2849ed09f7e34506faa7eae17",
-    ".agents/skills/l-plan/SKILL.md": "f259c9fd18feeba07545811943a5094d6452845d5ffb60cbe3c762b06fc1eb20",
-    ".agents/skills/l-report/SKILL.md": "e075a590c3f1d1829cf41bfe843a030ae2581e0f13c615ce6b403f318d934b6c",
+    ".agents/skills/l-plan/SKILL.md": "7b95a1dc08f1f4fd484b4c8409b755d74c6d5eabfb1eee5177f322e7dcd9a937",
+    ".agents/skills/l-report/SKILL.md": "8d0f522949f5dfdebdc3e9ebe7ba60fd6d3475ba7245bd513affcf80b86de0e0",
     ".agents/skills/l-sync/SKILL.md": "ff0c5f2c25a9f7725ffda45b2fcffeadf1a25eb7c9ec3e8f94dd283b24a62970",
-    ".agents/skills/l-task/SKILL.md": "588fe99fe7b9285868672be28c38f52e869a3a76dadb0560dcac6e9bfe558f16",
+    ".agents/skills/l-task/SKILL.md": "71546d35ad790cf07159e26c484fe558ec1cc5239b97e8778700a24031d47833",
     ".agents/skills/l-template/SKILL.md": "d4584f7bc3400ba61d13aff143ea496542ac8a9a3188e6bd0404d37a08e4b7b5",
-    ".claude/skills/l-adr/SKILL.md": "21b8c7947a4693fc681e48dc162ce690b1350a95c7dc00f89763447ca0aef359",
+    ".claude/skills/l-adr/SKILL.md": "0dc50f977063aa91d7fc7624671c581944cd60fd0c8bc0576be61f445af7b8aa",
     ".claude/skills/l-build/SKILL.md": "561808a63d6d6d934319ce320f7cc0a14404611156d7a4aceb00997f66a25759",
     ".claude/skills/l-check/SKILL.md": "83cc656828365ad5bae95c9f07601f503938e068809203bcc983092abb06f75c",
     ".claude/skills/l-design/SKILL.md": "11a623cc4bce6bae2a72cdd1b6ff2f47620e1511f9348f4a4b80b2dffb74e7be",
@@ -24,10 +24,10 @@
     ".claude/skills/l-init/SKILL.md": "50ddc1aac9fe15ab58c0a662a0ead82459b238c3bf4a9489481889dc99ce1949",
     ".claude/skills/l-learn/SKILL.md": "9cc868cca5ea0931d5b5b02fd0f4bcb87a676fdab062ba7de722fa65f0ffdde0",
     ".claude/skills/l-map/SKILL.md": "5114588b0d735ba869933df52b0144ca050521d012842fb778d3ee3d7a88ad52",
-    ".claude/skills/l-plan/SKILL.md": "82d6d3ab3379742caf90b7c4df6e9b10b34dbc305fbdc33a758071938ada4993",
-    ".claude/skills/l-report/SKILL.md": "d97a24c6afc1a758e9c56df7831b985608c1b79b516b5e0dcde8971945da2642",
+    ".claude/skills/l-plan/SKILL.md": "9370898f7ee0f47be5f7782c9a11e7f76450d50553e11d41c181eacf5004f7ce",
+    ".claude/skills/l-report/SKILL.md": "dce6b29c25fa20e23da417fbecde14a1e9ad903d3eb888cdba12114a1a8122b5",
     ".claude/skills/l-sync/SKILL.md": "4273f7fdcd9b626f3855e3fe76eacb7f55889cebdc98a6edd45fa30e88c6b09c",
-    ".claude/skills/l-task/SKILL.md": "b13d4363218afc6015527267ef98e7c715a8580dbbc9f98949ee9e83df3d71f9",
+    ".claude/skills/l-task/SKILL.md": "fc7d4efb53e2ce2c69cd9c58413f5e2847a2d8800900044e93a8ca09c8c16fcf",
     ".claude/skills/l-template/SKILL.md": "ef6182c407f9d443c18a7d71c719454ebcc6a7b77874ecaf428b7f5ee926cb9b",
     ".github/workflows/lanternspec.yml": "0ec4a49e8d9a388fa8658d094b81f95ae906c9e73e5b1246756b6a8b48716836"
   },
@@ -106,9 +106,9 @@
       "based_on": "1.0.0",
       "sha256": "643806a0e7c6a84ceff9d334ca4cb44ce0dc38884cd09977444581179eb16bff"
     },
-    "작업 단위 기록": {
-      "based_on": "1.0.0",
-      "sha256": "ddde2ac22a5885d33ce2dd9471508079a676a3ff1e681bae1d7f90037898654a"
+    "작업 나누기 기준": {
+      "based_on": "1.1.0",
+      "sha256": "d8cd321c3df1dbe5db7e04a303dc484d724d23019b7a066c694d3e699f71bd07"
     },
     "프로젝트 정의서": {
       "based_on": "1.0.0",
@@ -119,12 +119,12 @@
       "sha256": "1d940334521684f91cc461543cbe79ed41bda401307cddfd55c339a3aab31953"
     },
     "할 일": {
-      "based_on": "1.0.0",
-      "sha256": "5049d999d1c5ad1df001aa1df557b8ccb6abcc39bada2e19d7bf5f009b16d27b"
+      "based_on": "1.0.1",
+      "sha256": "078778e3594da055d3919777793f5f016b394920ef5f22b4e183831f8d836749"
     },
     "협업 규칙": {
-      "based_on": "1.0.0",
-      "sha256": "0843ca36e97b61aa3304db93f3cb2b86b58b8269ab0289f165981c00854ae6f8"
+      "based_on": "1.0.1",
+      "sha256": "b21b99e96303ff7b18e637b076b929b53c18f001b56dafcef0adf530520520dd"
     },
     "화면": {
       "based_on": "1.0.0",
@@ -140,5 +140,5 @@
     "codex",
     "antigravity"
   ],
-  "version": "0.1.2"
+  "version": "0.2.0"
 }
