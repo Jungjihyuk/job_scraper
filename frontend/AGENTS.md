@@ -66,3 +66,14 @@ src/
 - **API proxy**: Vite proxies `/api` and `/ws` to backend (port 8000) via `vite.config.ts`
 - **No state management library** — custom hooks + prop drilling
 - **WebSocket**: `useWebSocket` hook in `shared/api/` — `useScrapingSocket` wraps it for scraping events
+
+<!-- lanternspec:start -->
+## 영역 frontend — 이 폴더의 규칙
+
+일하는 방식 · 설계 원칙은 루트 AGENTS.md를 따른다. 아래는 이 폴더에만 해당한다.
+
+### 코드 컨벤션 — TypeScript
+- 이 폴더에서 실행하고, 고친 뒤 모두 통과해야 끝: 포맷 `pnpm biome format --write .` · 린트 `pnpm biome check .` · 타입 검사 `pnpm tsc --noEmit`
+- 타입 힌트: 모든 함수의 인자와 반환값, any 대신 unknown
+- 문서 주석 (TSDoc (/** … */) · 한국어): 내보내는 모든 것에 TSDoc (@param · @returns · @throws)
+<!-- lanternspec:end -->

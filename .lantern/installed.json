@@ -35,6 +35,11 @@
   },
   "language": "ko",
   "mcp": false,
+  "parts": [
+    "analysis",
+    "backend",
+    "frontend"
+  ],
   "templates": {
     "ADR": {
       "based_on": "1.0.0",

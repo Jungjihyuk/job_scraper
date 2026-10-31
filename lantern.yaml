@@ -17,7 +17,7 @@ project:
 
 docs:
   root: docs/
-  remote: local  # shared(같이 올림) | local(문서는 원격에 안 올림) — 바꿀 때는 lantern docs-mode
+  remote: local          # shared(같이 올림) | local(문서는 원격에 안 올림) — 바꿀 때는 lantern docs-mode
 
 knowledge:                  # 배우는 선로. 없으면 이 블록을 지운다
   type: obsidian            # obsidian | folder(아무 Markdown 폴더)
@@ -47,11 +47,37 @@ build:
   merge_approval: required  # required(반영 전 승인) | auto(반영 후 요약 보고)
   loop: 'off'                # off(할 일 안의 작은 반복만) | on(수락 기준 테스트가 통과할 때까지 작업 전체를 다시) — lantern harness suggest
   loop_limit: 3           # 큰 반복 최대 횟수
-  test: cd backend && uv run pytest  # 테스트 명령 (work finish · scan --tests)
-  format: cd backend && uv run ruff format --check app/  # 포맷 명령 (고친 뒤 돌린다)
-  lint: cd backend && uv run ruff check app/  # 린트 명령 (lantern lint · /l-build · CI)
-  typecheck: cd backend && uv run pyright app/  # 타입 검사 명령 (lantern lint · /l-build · CI)
+  test: cd backend && uv run pytest   # 테스트 명령 (work finish · scan --tests)
+  format: cd backend && uv run ruff format --check app/   # 포맷 명령 (고친 뒤 돌린다)
+  lint: cd backend && uv run ruff check app/   # 린트 명령 (lantern lint · /l-build · CI)
+  typecheck: cd backend && uv run pyright app/   # 타입 검사 명령 (lantern lint · /l-build · CI)
 check:
   max_lines: 300            # 이보다 길면 나누자고 경고 (막지는 않음)
 report:
   views: [kanban, timeline, debt]
+code:
+  # 영역 = 패키지 설정 파일(pyproject.toml · package.json 등)이 따로 있는 하위 프로젝트 — lantern parts (영역마다 AGENTS.md가 생긴다)
+  parts:
+  - path: analysis
+    languages:
+    - python
+    build:
+      format: uv run ruff format .
+      lint: uv run ruff check .
+      typecheck: uv run pyright
+  - path: backend
+    languages:
+    - python
+    build:
+      format: uv run ruff format --check app/
+      lint: uv run ruff check app/
+      typecheck: uv run pyright app/
+      test: uv run pytest
+  - path: frontend
+    languages:
+    - typescript
+    build:
+      format: pnpm biome format --write .
+      lint: pnpm biome check .
+      typecheck: pnpm tsc --noEmit
+  ignored_parts: []

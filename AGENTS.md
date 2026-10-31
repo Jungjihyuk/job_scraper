@@ -36,12 +36,13 @@
 - 원칙끼리 부딪히면 단순함이 먼저다. 끼워 넣는 자리는 확장 지점에만 만든다.
 - **작업 방식:** 코딩 전에 생각한다 · 필요한 곳만 고친다 · 목표로 검증한다
 
-### 코드 컨벤션 — Python · TypeScript
-- 고친 뒤 돌리고 모두 통과해야 끝: 포맷 `cd backend && uv run ruff format --check app/` · 린트 `cd backend && uv run ruff check app/` · 타입 검사 `cd backend && uv run pyright app/` · 테스트 `cd backend && uv run pytest` — 린트 · 타입 검사는 `lantern lint`로 한 번에
-- Python 타입 힌트: 모든 함수의 인자와 반환값 (모양이 정해지지 않은 데이터만 Any)
-- Python 문서 주석 (Google 스타일 docstring · 한국어): 모듈은 책임 한 줄 + 하지 않는 일, 공개 함수 · 클래스는 Google 스타일(Args · Returns · Raises)
-- TypeScript 타입 힌트: 모든 함수의 인자와 반환값, any 대신 unknown
-- TypeScript 문서 주석 (TSDoc (/** … */) · 한국어): 내보내는 모든 것에 TSDoc (@param · @returns · @throws)
+### 영역 — 폴더마다 자기 규칙
+| 영역 | 언어 | 규칙 |
+|---|---|---|
+| `analysis` | Python | `analysis/AGENTS.md` |
+| `backend` | Python | `backend/AGENTS.md` |
+| `frontend` | TypeScript | `frontend/AGENTS.md` |
+- 그 영역의 파일을 고치기 전에 그 영역의 AGENTS.md를 먼저 읽는다. 언어 컨벤션 · 확인 명령은 거기에 있다
 
 ### 커밋
 - 할 일 하나 = 커밋 하나. 메시지 끝에 ID: `feat: 로그인 버튼 추가 [W-012-T02]` (여러 할 일을 섞지 않는다)
