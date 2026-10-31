@@ -7,7 +7,7 @@
     ".agents/skills/l-design/SKILL.md": "3bccd06af720500542b82e448aeede6116f8a5834d87ebbbc9775ad7db29a507",
     ".agents/skills/l-idea/SKILL.md": "6a79b66cd764c817e38655602561cfe680801a0dd68e9c63d1c3318b915130ee",
     ".agents/skills/l-idea/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
-    ".agents/skills/l-init/SKILL.md": "8b1537af286b835d120047f95f5623fcc8b6b156563fddf9521eef40b42d61c8",
+    ".agents/skills/l-init/SKILL.md": "fb1bd902b159ee1f5020df603023d282013bf0942a3f178b985d4d68d0ee2b14",
     ".agents/skills/l-init/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
     ".agents/skills/l-learn/SKILL.md": "d30513965b208cb07ad770f5ab5e3aca939b3b26fa9e9896e3b664fda046b047",
     ".agents/skills/l-map/SKILL.md": "fb9b61d537e13b0937f77f7c20b84c5c080417c2849ed09f7e34506faa7eae17",
@@ -22,7 +22,7 @@
     ".claude/skills/l-check/SKILL.md": "83cc656828365ad5bae95c9f07601f503938e068809203bcc983092abb06f75c",
     ".claude/skills/l-design/SKILL.md": "11a623cc4bce6bae2a72cdd1b6ff2f47620e1511f9348f4a4b80b2dffb74e7be",
     ".claude/skills/l-idea/SKILL.md": "9a825c425453ba8bf62d806208839469e6d6b8221c8c02eadadfcd2c16b199ce",
-    ".claude/skills/l-init/SKILL.md": "50ddc1aac9fe15ab58c0a662a0ead82459b238c3bf4a9489481889dc99ce1949",
+    ".claude/skills/l-init/SKILL.md": "0fe66100c0cb0912301c22de1e72776879b2d6cf595173a54ea1318043673078",
     ".claude/skills/l-learn/SKILL.md": "9cc868cca5ea0931d5b5b02fd0f4bcb87a676fdab062ba7de722fa65f0ffdde0",
     ".claude/skills/l-map/SKILL.md": "5114588b0d735ba869933df52b0144ca050521d012842fb778d3ee3d7a88ad52",
     ".claude/skills/l-plan/SKILL.md": "9370898f7ee0f47be5f7782c9a11e7f76450d50553e11d41c181eacf5004f7ce",
@@ -142,5 +142,5 @@
     "codex",
     "antigravity"
   ],
-  "version": "0.2.2"
+  "version": "0.2.5"
 }
