@@ -4,3 +4,5 @@ runs-state/
 hook-state/
 pack/
 sessions/
+references.yaml
+term-candidates.json
