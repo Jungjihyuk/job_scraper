@@ -7,7 +7,15 @@ from app.pipeline.stages.content_scraper import ContentScraperStage
 from app.pipeline.stages.normalizer import JobNormalizerStage
 from app.pipeline.stages.database_saver import DatabaseSaverStage
 from app.pipeline.stages.file_saver import LocalFileSaverStage
-from app.pipeline.data_models import PipelineConfig, PipelineMetrics, StageResult, JobPostingData
+from app.pipeline.data_models import (
+    JobDetails,
+    JobPostingData,
+    JobSaveResult,
+    PipelineConfig,
+    PipelineMetrics,
+    StageResult,
+    ValidatedURL,
+)
 from app.core.logging import create_development_logger
 
 
@@ -51,6 +59,7 @@ class PipelineManager:
         self.total_job_details_count = 0  # 상세정보 스크래핑 카운트
         self.total_collected_count = 0  # 수집된 URL 카운트
         self.total_filtered_count = 0  # DB 조기 필터링으로 제외된 카운트
+        self._stage_error = False  # URL 수집 · 검증 스테이지 자체의 실패
 
         # DB 조기 필터링용 기존 posting_id 캐시
         self._existing_posting_ids: set = set()
@@ -161,8 +170,12 @@ class PipelineManager:
                                                                error_message=collect_result.error_message,
                                                                duration=collect_result.execution_time)
                 
+                self.metrics.add_stage_result(collect_result)
+                self.metrics.failed_cards += collect_result.urls_failed
+
                 if not collect_result.success:
                     self.logger.error("❌ URL 수집 실패. 파이프라인 종료.")
+                    self._stage_error = True
                     break
                 
                 new_job_posts = collect_result.data
@@ -172,6 +185,7 @@ class PipelineManager:
 
                 collected_before_filter = len(new_job_posts)
                 self.total_collected_count += collected_before_filter
+                self.metrics.total_urls_collected += collected_before_filter
 
                 # [Stage 1.5] DB 조기 필터링 — 이미 수집된 공고 제외
                 new_job_posts = self._filter_new_postings(new_job_posts)
@@ -207,6 +221,7 @@ class PipelineManager:
                 
                 # URL 검증 스테이지 실행
                 validate_result = await self._validate_urls(new_job_posts)
+                self._record_validation(validate_result)
 
                 # validate task 업데이트 (데이터베이스 저장 시에만)
                 if validate_result.success:
@@ -228,8 +243,11 @@ class PipelineManager:
                     # 검증된 URL을 데이터베이스에 저장
                     if self.database_saver:
                         try:
-                            await self.database_saver.execute(validated_urls)
-                            self.logger.info(f"💾 Saved {len(validated_urls)} URLs to database")
+                            url_save_result = await self.database_saver.execute(validated_urls)
+                            if url_save_result.success:
+                                self.logger.info(f"💾 Saved {url_save_result.urls_processed} URLs to database")
+                            else:
+                                self.logger.error(f"❌ Database save (URLs) failed: {url_save_result.error_message}")
                         except Exception as e:
                             self.logger.error(f"❌ Database save (URLs) failed: {e}")
 
@@ -244,6 +262,7 @@ class PipelineManager:
                             error_message=validate_result.error_message
                         )
                     self.logger.warning("⚠️ URL 검증에서 문제가 발생했습니다.")
+                    self._stage_error = True
                     scroll_count += 1
                     continue
                 
@@ -320,8 +339,14 @@ class PipelineManager:
                             self.total_job_details_count += len(job_details)
                             
                             # Task 완료 처리 - 성공/실패 개수 계산
-                            successful_scrapes = sum(1 for detail in job_details if detail.success)
-                            failed_scrapes = len(job_details) - successful_scrapes
+                            failed_details = [detail for detail in job_details if not detail.success]
+                            successful_scrapes = len(job_details) - len(failed_details)
+                            failed_scrapes = len(valid_urls) - successful_scrapes
+                            self.metrics.successful_scrapes += successful_scrapes
+                            self.metrics.failed_scrapes += failed_scrapes
+                            self.metrics.failed_count += failed_scrapes
+                            if self.database_saver:
+                                self.database_saver.record_failures(failed_details)
                             
                             # 성공률에 따른 상태 결정
                             if successful_scrapes > 0:
@@ -338,7 +363,7 @@ class PipelineManager:
                                     success_count=successful_scrapes,
                                     fail_count=failed_scrapes,
                                     duration=scrape_result.execution_time,
-                                    error_message=scrape_result.error_message if failed_scrapes > 0 else None
+                                    error_message=failed_details[0].error_message if failed_details else None
                                 )
                             self.logger.info(status_msg)
                             
@@ -346,22 +371,22 @@ class PipelineManager:
                             if successful_scrapes > 0:
                                 # 데이터베이스 저장
                                 if self.database_saver:
-                                    try:
-                                        await self.database_saver.execute(job_details)
-                                        # 저장 성공한 posting_id를 캐시에 추가
-                                        for detail in job_details:
-                                            if detail.success:
-                                                self._existing_posting_ids.add(detail.job_url.posting_id)
-                                        self.logger.info(f"💾 Saved {successful_scrapes} job details to database")
-                                    except Exception as e:
-                                        self.logger.error(f"❌ Database save (job details) failed: {e}")
+                                    await self._save_job_details(job_details)
+                                else:
+                                    # DB 없이 돌릴 때는 파일 저장이 유일한 저장이다
+                                    self.metrics.saved_count += successful_scrapes
                                 
                                 # 로컬 파일 저장
                                 if self.local_file_saver:
                                     try:
-                                        await self.local_file_saver.execute((job_details, self.config))
-                                        self.logger.info(f"📁 Saved {successful_scrapes} job details to local file")
+                                        file_result = await self.local_file_saver.execute((job_details, self.config))
+                                        self.metrics.file_save_failures += file_result.urls_failed
+                                        if file_result.success and not file_result.urls_failed:
+                                            self.logger.info(f"📁 Saved {successful_scrapes} job details to local file")
+                                        else:
+                                            self.logger.error(f"❌ Local file save failed: {file_result.urls_failed} items")
                                     except Exception as e:
+                                        self.metrics.file_save_failures += len(job_details)
                                         self.logger.error(f"❌ Local file save failed: {e}")
                             
                             self.logger.info(f"📊 Content scraping: {successful_scrapes} successful, {failed_scrapes} failed out of {len(job_details)}")
@@ -377,6 +402,10 @@ class PipelineManager:
                                     error_message=scrape_result.error_message if scrape_result else "Scraping failed with no result"
                                 )
                             self.logger.warning(f"⚠️ Content scraping 완전 실패 - success: {scrape_result.success if scrape_result else False}")
+                            self._record_scrape_stage_failure(
+                                valid_urls,
+                                (scrape_result.error_message if scrape_result else None) or "Scraping failed with no result",
+                            )
                             
                     except Exception as e:
                         # 예외 발생 시 Task 실패 처리
@@ -390,12 +419,10 @@ class PipelineManager:
                                 error_message=str(e)
                             )
                         self.logger.error(f"❌ Content scraping error: {e}", exc_info=True)
+                        self._record_scrape_stage_failure(valid_urls, str(e))
                         
                 else:
                     self.logger.info("📄 No valid URLs found for content scraping")
-                
-                # 5. 메트릭 업데이트
-                self._update_metrics(collect_result, validate_result)
                 
                 cycle_time = time.time() - cycle_start
                 valid_count = sum(1 for v in validated_urls if v.is_valid)
@@ -411,17 +438,22 @@ class PipelineManager:
         except Exception as e:
             self.logger.error(f"❌ Pipeline execution failed: {e}", exc_info=True)
             # 에러 발생 시 배치를 failed로 업데이트
-            if self.database_saver and self.database_saver.batch_id:
-                self.database_saver.update_batch_status("failed", self.total_validated_count)
+            self._finish_batch("failed")
             raise
         
         finally:
             # 리소스 정리
             await self.cleanup()
         
-        # 정상 완료 시 배치를 completed로 업데이트
-        if self.database_saver and self.database_saver.batch_id:
-            self.database_saver.update_batch_status("completed", self.total_validated_count)
+        # 카드가 있었는데 하나도 읽지 못했으면 수집이 깨진 것이다
+        no_card_readable = self.metrics.failed_cards > 0 and self.total_collected_count == 0
+        self._finish_batch(
+            decide_batch_status(
+                self.metrics.saved_count,
+                self.metrics.failed_count,
+                self._stage_error or no_card_readable,
+            )
+        )
         
         # 최종 메트릭 완료
         self.metrics.total_execution_time = time.time() - start_time
@@ -450,19 +482,93 @@ class PipelineManager:
         return await self.job_normalizer.execute(scraped_data)
     
     
-    def _update_metrics(self, collect_result: StageResult, validate_result: StageResult):
-        """📊 메트릭 업데이트"""
-        self.metrics.add_stage_result(collect_result)
+    def _record_validation(self, validate_result: StageResult) -> None:
+        """📊 URL 검증 결과를 메트릭에 더한다."""
         self.metrics.add_stage_result(validate_result)
-        
-        # URL 통계 업데이트
-        self.metrics.total_urls_collected += collect_result.urls_processed
-        
+
         if validate_result.data:
             valid_count = sum(1 for url in validate_result.data if url.is_valid)
             self.metrics.valid_urls += valid_count
             self.metrics.invalid_urls += len(validate_result.data) - valid_count
-    
+
+    def _record_scrape_stage_failure(
+        self, valid_urls: List[ValidatedURL], error_message: str
+    ) -> None:
+        """스크래핑 스테이지 전체가 실패했을 때 대상 공고를 모두 실패로 남긴다.
+
+        Args:
+            valid_urls: 스크래핑하려던 URL.
+            error_message: 공고마다 남길 실패 원인.
+        """
+        self.metrics.failed_scrapes += len(valid_urls)
+        self.metrics.failed_count += len(valid_urls)
+        if self.database_saver:
+            self.database_saver.record_failures(
+                [
+                    JobDetails(
+                        job_url=url.job_url,
+                        job_description={},
+                        success=False,
+                        error_message=error_message,
+                    )
+                    for url in valid_urls
+                ]
+            )
+
+    async def _save_job_details(self, job_details: List[JobDetails]) -> None:
+        """공고를 저장하고, 실제 저장 결과로만 건수와 캐시를 갱신한다.
+
+        Args:
+            job_details: 정규화까지 끝난 공고. 상세 추출 실패분은 저장하지 않는다.
+        """
+        saver = self.database_saver
+        if saver is None:
+            return
+
+        try:
+            stage_result = await saver.execute(job_details)
+            error_message = None if stage_result.success else stage_result.error_message
+        except Exception as e:
+            stage_result = None
+            error_message = str(e)
+
+        if stage_result is not None and error_message is None:
+            result = stage_result.data
+        else:
+            self.logger.error(f"❌ Database save (job details) failed: {error_message}")
+            failed = [detail for detail in job_details if detail.success]
+            for detail in failed:
+                detail.error_message = f"DB 저장 실패: {error_message}"
+            result = JobSaveResult(failed=failed)
+
+        self.metrics.saved_count += len(result.saved)
+        self.metrics.failed_count += len(result.failed)
+        self._existing_posting_ids.update(
+            detail.job_url.posting_id for detail in result.saved
+        )
+        saver.record_failures(result.failed)
+        self.logger.info(
+            f"💾 Saved {len(result.saved)} job details to database "
+            f"({len(result.failed)} failed, {result.duplicates} duplicates)"
+        )
+
+    def _finish_batch(self, status: str) -> None:
+        """최종 상태를 메트릭과 배치에 남긴다.
+
+        Args:
+            status: 배치 상태.
+        """
+        self.metrics.batch_status = status
+        if self.database_saver and self.database_saver.batch_id:
+            self.database_saver.update_batch_status(
+                status,
+                self.total_validated_count,
+                collected=self.total_collected_count,
+                saved=self.metrics.saved_count,
+                failed=self.metrics.failed_count,
+                skipped=self.metrics.skipped_count,
+            )
+
     def _log_final_metrics(self):
         """📈 최종 통계 로깅"""
         new_count = self.total_collected_count - self.total_filtered_count
@@ -480,6 +586,12 @@ class PipelineManager:
         self.logger.info(f"   ✅ Valid URLs: {self.metrics.valid_urls}")
         self.logger.info(f"   ❌ Invalid URLs: {self.metrics.invalid_urls}")
         self.logger.info(f"   📄 Job Details Scraped: {self.total_job_details_count}")
+        self.logger.info(f"   💾 Saved: {self.metrics.saved_count}")
+        self.logger.info(f"   ❌ Failed: {self.metrics.failed_count}")
+        self.logger.info(f"   ⏭️ Skipped (retry limit): {self.metrics.skipped_count}")
+        self.logger.info(f"   🃏 Failed Cards: {self.metrics.failed_cards}")
+        self.logger.info(f"   📁 File Save Failures: {self.metrics.file_save_failures}")
+        self.logger.info(f"   🏁 Batch Status: {self.metrics.batch_status}")
         self.logger.info(f"   ⏱️ Total Execution Time: {self.metrics.total_execution_time:.2f}s")
     
     async def cleanup(self):

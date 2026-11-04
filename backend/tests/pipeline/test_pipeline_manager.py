@@ -7,7 +7,7 @@ import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 
 from app.pipeline.manager import PipelineManager
-from app.pipeline.data_models import PipelineConfig
+from app.pipeline.data_models import JobSaveResult, PipelineConfig
 from tests.conftest import (
     make_job_posting,
     make_stage_result,
@@ -177,7 +177,11 @@ class TestPipelineRun:
         mock_db_saver.batch_id = 1
         mock_db_saver.create_task.return_value = 1
         mock_db_saver.update_task_status = MagicMock()
-        mock_db_saver.execute = AsyncMock()
+        mock_db_saver.execute = AsyncMock(
+            return_value=make_stage_result(
+                data=JobSaveResult(saved=[details])
+            )
+        )
         mock_db_saver.update_batch_status = MagicMock()
         mgr.database_saver = mock_db_saver
         mgr.local_file_saver = None
