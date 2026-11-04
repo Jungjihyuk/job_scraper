@@ -1,6 +1,6 @@
 ---
 name: l-report
-description: 원하는 보기로 현황 확인 — 작업 폴더 · 현재 상태 · 부채 장부를 읽어 칸반 · 타임라인(Mermaid gantt) · 도메인별 · 추적(아이디어→작업→커밋) · 부채 현황 · 문서-코드 일치를 4. 운영 기록/보고/현황.md에 만들고, 맨 위에 3줄 요약을 쓴다. Use when the user asks for status, progress, a kanban, a timeline or a report.
+description: 원하는 보기로 현황 확인 — 작업 폴더 · 현재 상태 · 부채 장부를 읽어 칸반 · 타임라인 · 도메인별 · 추적(아이디어→작업→커밋) · 부채 현황 · 문서-코드 일치를 4. 운영 기록/보고/현황.md에 만들고, 맨 위에 3줄 요약을 쓴다. Use when the user asks for status, progress, a kanban, a timeline or a report.
 ---
 <!-- lanternspec가 생성한 파일 — 원본: lanternspec/resources/skills. `lantern upgrade`가 다시 만든다 (직접 고치면 upgrade가 건너뜀) -->
 
@@ -13,7 +13,7 @@ description: 원하는 보기로 현황 확인 — 작업 폴더 · 현재 상�
 | 보기 | 이름 |
 |---|---|
 | 🗂 칸반 | `kanban` |
-| 📅 타임라인 (WBS) | `timeline` |
+| 📅 타임라인 | `timeline` |
 | 🧩 도메인 · 요구사항별 | `domain` |
 | 🔗 추적 (아이디어 → 작업 → 커밋) | `trace` |
 | 📒 부채 현황 | `debt` |
