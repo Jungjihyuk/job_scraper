@@ -1,11 +1,24 @@
 import { useRef, useEffect, useState } from 'react'
+import type { WsEvent } from '../../../shared/api'
 import { useDashboardStats } from '../../../entities/dashboard'
 import { useScrapingSocket, startScraping, stopScraping, SCRAPER_TYPES, JOB_OPTIONS, SCRAPE_MODES } from '../../../entities/scraping'
 import { LoadingSpinner, ErrorMessage } from '../../../shared/ui'
+import { ScrapingResultCard } from './ScrapingResultCard'
+
+/**
+ * 로그 한 줄의 글자색을 고른다.
+ * @param msg - 로그에 표시할 이벤트
+ * @returns Tailwind 글자색 클래스
+ */
+function logColor(msg: WsEvent): string {
+  if (msg.type === 'error') return 'text-red-600'
+  if (msg.type !== 'complete') return 'text-slate-700'
+  return msg.result?.status === 'partial' ? 'text-amber-600' : 'text-green-600'
+}
 
 export function ScrapingPage() {
   const { stats, loading: statsLoading, error: statsError } = useDashboardStats()
-  const { messages, isConnected, isScrapingRunning } = useScrapingSocket()
+  const { messages, isConnected, isScrapingRunning, lastResult } = useScrapingSocket()
   const [scraperType, setScraperType] = useState<string>(SCRAPER_TYPES[0]?.value ?? 'wanted')
   const [jobOption, setJobOption] = useState<string>(JOB_OPTIONS[0]?.value ?? '파이썬 개발자')
   const [scrapeMode, setScrapeMode] = useState<string>(SCRAPE_MODES[0]?.value ?? 'default')
@@ -110,6 +123,8 @@ export function ScrapingPage() {
         )}
       </div>
 
+      {lastResult && <ScrapingResultCard result={lastResult} />}
+
       {messages.length > 0 && (
         <div className='rounded-lg border border-slate-200 bg-white p-4 shadow-sm'>
           <h3 className='mb-2 text-sm font-semibold text-slate-700'>📋 실행 로그</h3>
@@ -117,7 +132,7 @@ export function ScrapingPage() {
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`py-0.5 ${msg.type === 'error' ? 'text-red-600' : msg.type === 'complete' ? 'text-green-600' : 'text-slate-700'}`}
+                className={`py-0.5 ${logColor(msg)}`}
               >
                 {new Date().toLocaleTimeString()} — {msg.message}
               </div>

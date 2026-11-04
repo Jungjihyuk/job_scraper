@@ -8,6 +8,7 @@ export type {
   WsCompleteEvent,
   WsErrorEvent,
   WsStoppedEvent,
+  ScrapingResult,
   DashboardStats,
   JobPosting,
   JobListResponse,

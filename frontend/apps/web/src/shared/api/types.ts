@@ -2,8 +2,17 @@ export type ApiError = { message: string; status?: number }
 
 export type WsStatusEvent = { type: 'status'; message: string; progress: number }
 export type WsLogEvent = { type: 'log'; message: string }
-export type WsCompleteEvent = { type: 'complete'; message: string; progress: number }
-export type WsErrorEvent = { type: 'error'; message: string }
+/** 파이프라인 한 번의 실행 결과. 상태는 서버가 정한다. */
+export type ScrapingResult = {
+  status: 'completed' | 'partial' | 'failed'
+  job: string
+  collected: number
+  saved: number
+  failed: number
+  skipped: number
+}
+export type WsCompleteEvent = { type: 'complete'; message: string; progress: number; result?: ScrapingResult }
+export type WsErrorEvent = { type: 'error'; message: string; result?: ScrapingResult }
 export type WsStoppedEvent = { type: 'stopped'; message: string }
 export type WsEvent =
   | WsStatusEvent
