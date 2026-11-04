@@ -22,6 +22,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from app.pipeline.stages.content_scraper import WantedSelectors
 from app.utils.stealth import (
     MODERN_USER_AGENT,
     STEALTH_LAUNCH_ARGS,
@@ -31,18 +32,14 @@ from app.utils.stealth import (
 
 # ── 진단 대상 셀렉터 (content_scraper.py WantedSelectors 기준) ──
 WANTED_SELECTORS = {
-    "CONTENT_WRAPPER": "section.JobContent_descriptionWrapper__RMlfm",
-    "TITLE": "h1.wds-58fmok",
-    "POSITION_DETAIL": (
-        "div.JobDescription_JobDescription__paragraph__wrapper__WPrKC span.wds-h4ga6o"
-    ),
-    "JOBDESCRIPTION": ("div.JobDescription_JobDescription__paragraph__87w8I"),
-    "COMPANY_TAGS": "ul.CompanyTags_CompanyTags__list__XmzkW li",
-    "DEADLINE": "span.wds-1u1yyy",
-    "WORK_PLACE": (
-        "div.JobWorkPlace_JobWorkPlace__map__location__6pp2d span.wds-1td1qmv"
-    ),
-    "EXPAND_BUTTON": "button:has(span:text('상세 정보 더 보기'))",
+    "CONTENT_WRAPPER": WantedSelectors.CONTENT_WRAPPER,
+    "TITLE": WantedSelectors.TITLE,
+    "POSITION_DETAIL": WantedSelectors.POSITION_DETAIL,
+    "JOBDESCRIPTION": WantedSelectors.JOBDESCRIPTION,
+    "COMPANY_TAGS": WantedSelectors.COMPANY_TAGS,
+    "DEADLINE": WantedSelectors.DEADLINE,
+    "WORK_PLACE": WantedSelectors.WORK_PLACE,
+    "EXPAND_BUTTON": WantedSelectors.EXPAND_BUTTON,
 }
 
 # 목록 페이지용 셀렉터
