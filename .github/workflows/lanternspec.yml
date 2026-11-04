@@ -15,19 +15,27 @@ jobs:
       # 프로젝트 도구 · 의존성 준비 — lantern.yaml project.languages와 lock 파일에서 (lantern upgrade가 맞춘다)
       - name: Python 도구 준비 (uv)
         uses: astral-sh/setup-uv@v10.3.2
-      - name: Python 도구 준비 (uv)
+      - name: Python 도구 준비 (uv) · analysis
+        if: hashFiles('analysis/pyproject.toml') != ''
         run: uv sync
+        working-directory: analysis
+      - name: Python 도구 준비 (uv) · backend
+        if: hashFiles('backend/pyproject.toml') != ''
+        run: uv sync
+        working-directory: backend
       - name: TypeScript 도구 준비 (pnpm)
         uses: actions/setup-node@v7
         with:
           node-version: lts/*
-      - name: TypeScript 도구 준비 (pnpm)
+      - name: TypeScript 도구 준비 (pnpm) · frontend
+        if: hashFiles('frontend/package.json') != ''
         run: npm install -g pnpm && pnpm install
+        working-directory: frontend
       - name: 양식 검사 (lantern check)
         run: lantern check --quiet
         if: hashFiles('lantern.yaml') != ''
-      - name: 린트 · 타입 검사 (lantern lint — build.lint · build.typecheck)
-        run: lantern lint
+      - name: 린트 · 타입 검사 (lantern lint — 영역마다의 명령, 없으면 build.lint · build.typecheck)
+        run: lantern lint --ci
         if: hashFiles('lantern.yaml') != ''
       - name: 문서-코드 어긋남 + 수락 기준 테스트 (lantern scan --tests)
-        run: lantern scan --tests
+        run: lantern scan --tests --ci
