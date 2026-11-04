@@ -39,22 +39,27 @@ class BaseStage(ABC):
         self.logger = create_development_logger(f"pipeline.{name}")
         self.enable_duplicate_check = enable_duplicate_check
         self.processed_items: Set[str] = set()
+        self._reset_metrics()
+
+    def _reset_metrics(self) -> None:
+        """한 번의 실행 결과만 담도록 메트릭을 비운다."""
         self.metrics = {
             'items_processed': 0,
             'items_failed': 0,
             'execution_time': 0.0
         }
-    
+
     async def execute(self, data: Any) -> StageResult:
         """🚀 Stage 실행 (메트릭 수집 포함)"""
         start_time = time.time()
+        self._reset_metrics()
         self.logger.info(f"🔄 Starting stage: {self.name}")
         
         try:
             # 실제 처리 로직 실행
             result_data = await self.process(data)
             
-            execution_time = int(time.time() - start_time)
+            execution_time = time.time() - start_time
             
             # 성공 결과 반환
             stage_result = StageResult(
@@ -76,7 +81,7 @@ class BaseStage(ABC):
             return stage_result
             
         except Exception as e:
-            execution_time = int(time.time() - start_time)
+            execution_time = time.time() - start_time
             error_msg = f"Stage {self.name} failed: {str(e)}"
             self.logger.error(error_msg, exc_info=True)
             
@@ -152,7 +157,11 @@ class AsyncBatchStage(BaseStage):
                     self.update_metrics(failed=1)
                 else:
                     results.append(result)
-                    self.update_metrics(processed=1)
+                    # success=False로 돌아온 항목도 실패로 센다
+                    if getattr(result, "success", True):
+                        self.update_metrics(processed=1)
+                    else:
+                        self.update_metrics(failed=1)
             
             # 배치 간 딜레이 (선택적)
             if i + self.batch_size < len(data):

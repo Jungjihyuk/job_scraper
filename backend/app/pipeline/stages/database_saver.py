@@ -3,6 +3,7 @@
 스크래핑된 데이터를 PostgreSQL에 저장
 """
 
+import math
 import time
 import hashlib
 from typing import List, Union, Optional
@@ -193,7 +194,7 @@ class DatabaseSaverStage(BaseStage):
         success_count: int,
         fail_count: int,
         error_message: str,
-        duration: int,
+        duration: float,
     ):
         if not task_id:
             return
@@ -206,7 +207,8 @@ class DatabaseSaverStage(BaseStage):
                     task.success_count = success_count
                     task.fail_count = fail_count
                     task.error_message = error_message
-                    task.duration = duration
+                    # 정수 초 열이라 올림해 1초 미만이 0으로 남지 않게 한다
+                    task.duration = math.ceil(duration)
                     session.commit()
                     self.logger.debug(f"📝 Updated task {task_id} status to: {status}")
 
