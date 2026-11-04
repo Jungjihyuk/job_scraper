@@ -10,6 +10,8 @@ from typing import List, Union, Optional
 from uuid import uuid4
 from datetime import datetime
 
+from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -18,6 +20,7 @@ from app.pipeline.data_models import (
     JobPostingData,
     ValidatedURL,
     JobDetails,
+    JobSaveResult,
     StageResult,
 )
 from app.core.database import db_manager
@@ -32,6 +35,18 @@ from app.models import (
     ExperienceCategory,
 )
 from app.utils.deadline_parser import DeadlineParser
+
+
+def url_hash(url: str) -> str:
+    """scraped_urls.url_hash에 쓰는 해시를 만든다.
+
+    Args:
+        url: 공고 주소.
+
+    Returns:
+        주소의 SHA-256 16진수 문자열.
+    """
+    return hashlib.sha256(url.encode()).hexdigest()
 
 
 class DatabaseSaverStage(BaseStage):
@@ -131,9 +146,24 @@ class DatabaseSaverStage(BaseStage):
             self.logger.warning(f"⚠️ Failed to cleanup incomplete batches: {e}")
             # 정리 실패해도 새 배치 생성은 계속 진행
 
-    def update_batch_status(self, status: str, total_urls: int):
-        """
-        배치 상태 업데이트
+    def update_batch_status(
+        self,
+        status: str,
+        total_urls: int,
+        collected: int = 0,
+        saved: int = 0,
+        failed: int = 0,
+        skipped: int = 0,
+    ) -> None:
+        """배치 상태와 실행 결과 건수를 쓴다.
+
+        Args:
+            status: 배치 상태.
+            total_urls: 검증한 URL 수.
+            collected: 목록에서 수집한 공고 수.
+            saved: 저장한 공고 수.
+            failed: 상세 추출과 저장에 실패한 공고 수.
+            skipped: 3회 제한으로 건너뛴 공고 수.
         """
         if not self.batch_id:
             return
@@ -144,8 +174,12 @@ class DatabaseSaverStage(BaseStage):
                 if batch:
                     batch.status = status
                     batch.total_urls = total_urls
+                    batch.collected_count = collected
+                    batch.saved_count = saved
+                    batch.failed_count = failed
+                    batch.skipped_count = skipped
 
-                    if status in ["completed", "failed"]:
+                    if status in ["completed", "partial", "failed"]:
                         batch.completed_at = datetime.now()
                     session.commit()
                     self.logger.info(f"📝 Updated batch status to: {status}")
@@ -218,7 +252,7 @@ class DatabaseSaverStage(BaseStage):
     async def _save_validated_urls(
         self, validated_urls: List[ValidatedURL]
     ) -> List[ValidatedURL]:
-        """검증된 URL들을 데이터베이스에 저장"""
+        """검증된 URL들을 저장한다. 이미 있는 URL은 건드리지 않고 건너뛴다."""
         start_time = time.time()
 
         try:
@@ -226,47 +260,37 @@ class DatabaseSaverStage(BaseStage):
                 f"💾 Saving {len(validated_urls)} validated URLs to database..."
             )
 
+            rows = [
+                {
+                    "batch_id": self.batch_id,
+                    "url": validated_url.job_url.full_url,
+                    "url_hash": url_hash(validated_url.job_url.full_url),
+                    "status": "success" if validated_url.is_valid else "failed",
+                    "error_message": validated_url.error_message
+                    if not validated_url.is_valid
+                    else None,
+                    "scraped_at": validated_url.validated_at,
+                }
+                for validated_url in validated_urls
+            ]
+            statement = (
+                insert(ScrapedUrl)
+                .values(rows)
+                .on_conflict_do_nothing(index_elements=["url_hash"])
+                .returning(ScrapedUrl.id)
+            )
+
             with db_manager.get_session() as session:
-                # URL들을 ScrapedUrl 테이블에 저장
-                saved_count = 0
-                for validated_url in validated_urls:
-                    try:
-                        scraped_url = ScrapedUrl(
-                            batch_id=self.batch_id,
-                            url=validated_url.job_url.full_url,
-                            url_hash=hashlib.sha256(
-                                validated_url.job_url.full_url.encode()
-                            ).hexdigest(),
-                            status="success" if validated_url.is_valid else "failed",
-                            error_message=validated_url.error_message
-                            if not validated_url.is_valid
-                            else None,
-                            scraped_at=validated_url.validated_at,
-                        )
-
-                        session.add(scraped_url)
-                        saved_count += 1
-                        self.update_metrics(processed=1)
-                    except IntegrityError:
-                        session.rollback()
-                        self.logger.warning(
-                            f"⚠️ URL already exists: {validated_url.job_url.full_url}"
-                        )
-                        self.update_metrics(failed=1)
-                    except Exception as e:
-                        session.rollback()
-                        self.logger.error(
-                            f"❌ Failed to save URL {validated_url.job_url.full_url}: {e}"
-                        )
-                        self.update_metrics(failed=1)
-
+                # 드라이버의 rowcount는 -1일 수 있어 실제 삽입된 행을 센다
+                saved_count = len(session.execute(statement).all())
                 session.commit()
 
-                # 통계 업데이트
-                execution_time = int(time.time() - start_time)
-                self.logger.info(
-                    f"✅ Saved {saved_count}/{len(validated_urls)} URLs to database in {execution_time:.2f}s"
-                )
+            self.update_metrics(processed=saved_count)
+            self.logger.info(
+                f"✅ Saved {saved_count}/{len(validated_urls)} URLs to database "
+                f"({len(validated_urls) - saved_count} already existed) "
+                f"in {time.time() - start_time:.2f}s"
+            )
 
         except Exception as e:
             self.logger.error(f"❌ Database save failed: {e}")
@@ -276,9 +300,10 @@ class DatabaseSaverStage(BaseStage):
 
     async def _save_job_details(
         self, job_details_list: List[JobDetails]
-    ) -> List[JobDetails]:
-        """채용공고 상세정보들을 데이터베이스에 저장"""
+    ) -> JobSaveResult:
+        """상세 추출에 성공한 공고를 저장하고 공고별 결과를 돌려준다."""
         start_time = time.time()
+        result = JobSaveResult()
 
         try:
             # 성공한 스크래핑 결과만 필터링
@@ -286,14 +311,13 @@ class DatabaseSaverStage(BaseStage):
 
             if not successful_details:
                 self.logger.warning("📋 No successful job details to save")
-                return job_details_list
+                return result
 
             self.logger.info(
                 f"💾 Saving {len(successful_details)} job details to database..."
             )
 
             # 각 job_posting을 개별 트랜잭션으로 처리하여 롤백 문제 방지
-            saved_count = 0
             for job_details in successful_details:
                 try:
                     with db_manager.get_session() as session:
@@ -308,7 +332,7 @@ class DatabaseSaverStage(BaseStage):
                             self.logger.info(
                                 f"⏭️ Skipped duplicate job posting: {job_details.job_url.posting_id}"
                             )
-                            self.update_metrics(processed=1)
+                            result.duplicates += 1
                             continue
 
                         # 회사 정보 저장 또는 조회
@@ -343,27 +367,23 @@ class DatabaseSaverStage(BaseStage):
                                 if experience_category
                                 else None
                             ),
-                            experience=job_details.job_description.get(
-                                "experience", ""
-                            ),
-                            preferred=job_details.job_description.get("preferred", ""),
-                            benefits=job_details.job_description.get("benefits", ""),
+                            experience=job_details.job_description.get("experience"),
+                            preferred=job_details.job_description.get("preferred"),
+                            benefits=job_details.job_description.get("benefits"),
                             hiring_process=job_details.job_description.get(
-                                "hiring_process", ""
+                                "hiring_process"
                             ),
                             position=job_details.job_description.get(
-                                "title", ""
+                                "title"
                             ),  # job_details.job_url.position,
                             position_detail=job_details.job_description.get(
-                                "position_detail", ""
+                                "position_detail"
                             ),
-                            main_tasks=job_details.job_description.get(
-                                "main_tasks", ""
-                            ),
+                            main_tasks=job_details.job_description.get("main_tasks"),
                             requirements=job_details.job_description.get(
-                                "requirements", ""
+                                "requirements"
                             ),
-                            tags=job_details.job_description.get("tags", {}),
+                            tags=job_details.job_description.get("tags", []),
                             deadline=deadline_date,
                             is_always_recruiting=is_always_recruiting,
                             domain_l2=job_details.job_description.get("domain"),
@@ -372,35 +392,82 @@ class DatabaseSaverStage(BaseStage):
                             employment_type=job_details.job_description.get("employment_type"),
                             core_technologies=job_details.job_description.get("core_technologies"),
                             posted_date=job_details.posted_date,
+                            normalization_failed=job_details.normalization_failed,
                         )
 
                         session.add(job_posting)
+                        # 다시 수집해 성공한 공고는 실패 기록을 지운다
+                        session.query(ScrapedUrl).filter_by(
+                            url_hash=url_hash(job_details.job_url.full_url)
+                        ).update(
+                            {
+                                "status": "success",
+                                "retry_count": 0,
+                                "error_message": None,
+                            },
+                            synchronize_session=False,
+                        )
                         session.commit()
-                        saved_count += 1
+                        result.saved.append(job_details)
                         self.update_metrics(processed=1)
 
                 except IntegrityError as e:
                     self.logger.warning(
                         f"⚠️ Integrity error for job posting {job_details.job_url.posting_id}: {e}"
                     )
+                    job_details.error_message = f"DB 저장 실패: {e}"
+                    result.failed.append(job_details)
                     self.update_metrics(failed=1)
                 except Exception as e:
                     self.logger.error(
                         f"❌ Failed to save job details {job_details.job_url.full_url}: {e}"
                     )
+                    job_details.error_message = f"DB 저장 실패: {e}"
+                    result.failed.append(job_details)
                     self.update_metrics(failed=1)
 
             # 통계 업데이트
             execution_time = time.time() - start_time
             self.logger.info(
-                f"✅ Saved {saved_count}/{len(successful_details)} job details to database in {execution_time:.2f}s"
+                f"✅ Saved {len(result.saved)}/{len(successful_details)} job details "
+                f"({len(result.failed)} failed, {result.duplicates} duplicates) "
+                f"in {execution_time:.2f}s"
             )
 
         except Exception as e:
             self.logger.error(f"❌ Database save failed: {e}")
             raise
 
-        return job_details_list
+        return result
+
+    def record_failures(self, failed_details: List[JobDetails]) -> None:
+        """실패한 공고의 실패 횟수와 원인을 scraped_urls에 남긴다.
+
+        상세 추출 실패와 저장 실패를 모두 센다. 기록에 실패해도 실행은 계속한다.
+
+        Args:
+            failed_details: 실패한 공고. `error_message`에 원인이 있다.
+        """
+        if not failed_details:
+            return
+
+        try:
+            with db_manager.get_session() as session:
+                for details in failed_details:
+                    session.query(ScrapedUrl).filter_by(
+                        url_hash=url_hash(details.job_url.full_url)
+                    ).update(
+                        {
+                            "status": "failed",
+                            "retry_count": func.coalesce(ScrapedUrl.retry_count, 0)
+                            + 1,
+                            "error_message": details.error_message,
+                        },
+                        synchronize_session=False,
+                    )
+                session.commit()
+        except Exception as e:
+            self.logger.error(f"❌ Failed to record failures: {e}")
 
     def _get_or_create_company(
         self, session: Session, job_details: JobDetails

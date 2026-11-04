@@ -51,6 +51,14 @@ class JobDetails:
 
 
 @dataclass
+class JobSaveResult:
+    """DatabaseSaverStage가 공고 상세를 저장한 결과"""
+    saved: List[JobDetails] = field(default_factory=list)
+    failed: List[JobDetails] = field(default_factory=list)  # error_message에 원인
+    duplicates: int = 0  # 이미 있어 건너뛴 공고 수
+
+
+@dataclass
 class PipelineConfig:
     """⚙️ Pipeline 실행 설정"""
     job: str
