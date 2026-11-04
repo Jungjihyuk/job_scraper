@@ -13,6 +13,7 @@ from app.pipeline.data_models import (
     PipelineConfig,
 )
 from app.pipeline.manager import PipelineManager
+from app.pipeline.stages.normalizer import JobNormalizerStage
 from tests.conftest import (
     make_job_details,
     make_job_posting,
@@ -427,3 +428,56 @@ class TestRetryLimit:
         metrics = await mgr.run()
 
         assert metrics.skipped_count == 0
+
+
+class TestNormalizationFailed:
+    @pytest.mark.asyncio
+    async def test_failed_stage_marks_and_still_saves(self):
+        """AC-7: 정규화 스테이지가 실패해도 표시를 남기고 저장한다"""
+        mgr = _manager()
+        ok = make_job_details("1")
+        mgr._collect_urls = AsyncMock(return_value=_collect("1"))
+        mgr._scrape_content = AsyncMock(return_value=_scraped(ok))
+        mgr._normalize_jobs = AsyncMock(
+            return_value=make_stage_result(success=False)
+        )
+        _wire_save(mgr, JobSaveResult(saved=[ok]))
+
+        metrics = await mgr.run()
+
+        assert ok.normalization_failed is True
+        assert metrics.saved_count == 1
+        assert metrics.batch_status == "completed"
+
+    @pytest.mark.asyncio
+    async def test_exception_marks_too(self):
+        mgr = _manager()
+        ok = make_job_details("1")
+        mgr._collect_urls = AsyncMock(return_value=_collect("1"))
+        mgr._scrape_content = AsyncMock(return_value=_scraped(ok))
+        mgr._normalize_jobs = AsyncMock(side_effect=RuntimeError("boom"))
+        _wire_save(mgr, JobSaveResult(saved=[ok]))
+
+        await mgr.run()
+
+        assert ok.normalization_failed is True
+
+    @pytest.mark.asyncio
+    async def test_item_failure_marks_only_that_item(self):
+        """AC-7: 항목 하나의 정규화 실패는 그 공고에만 표시된다"""
+        stage = JobNormalizerStage()
+        good = make_job_details("1")
+        bad = make_job_details("2")
+
+        def analyze(details):
+            if details is bad:
+                raise ValueError("분석 실패")
+            return details
+
+        stage._analyze_content = analyze
+
+        result = await stage.process([good, bad])
+
+        assert result == [good, bad]
+        assert good.normalization_failed is False
+        assert bad.normalization_failed is True

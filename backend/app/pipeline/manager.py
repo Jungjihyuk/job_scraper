@@ -342,7 +342,7 @@ class PipelineManager:
                                             error_message=normalize_result.error_message if normalize_result else "Normalization failed"
                                         )
                                     self.logger.warning("⚠️ Job normalization failed, using original data")
-                                    job_details = scrape_result.data
+                                    job_details = self._mark_normalization_failed(scrape_result.data)
                                     
                             except Exception as e:
                                 # 정규화 예외 발생 시 원본 데이터 사용
@@ -356,7 +356,7 @@ class PipelineManager:
                                         error_message=str(e)
                                     )
                                 self.logger.error(f"❌ Job normalization error: {e}", exc_info=True)
-                                job_details = scrape_result.data
+                                job_details = self._mark_normalization_failed(scrape_result.data)
                             self.total_job_details_count += len(job_details)
                             
                             # Task 완료 처리 - 성공/실패 개수 계산
@@ -503,6 +503,19 @@ class PipelineManager:
         return await self.job_normalizer.execute(scraped_data)
     
     
+    def _mark_normalization_failed(self, job_details: List[JobDetails]) -> List[JobDetails]:
+        """정규화 스테이지 전체가 실패한 공고에 재처리 표시를 남긴다.
+
+        Args:
+            job_details: 정규화하지 못한 공고.
+
+        Returns:
+            표시를 남긴 같은 공고 목록.
+        """
+        for detail in job_details:
+            detail.normalization_failed = True
+        return job_details
+
     def _record_validation(self, validate_result: StageResult) -> None:
         """📊 URL 검증 결과를 메트릭에 더한다."""
         self.metrics.add_stage_result(validate_result)
