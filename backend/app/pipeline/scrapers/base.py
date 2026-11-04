@@ -5,7 +5,10 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 from playwright.async_api import Page
+from app.core.logging import create_development_logger
 from app.pipeline.data_models import JobPostingData, PipelineConfig
+
+logger = create_development_logger(__name__)
 
 
 class Scraper(ABC):
@@ -16,6 +19,7 @@ class Scraper(ABC):
         self.base_url = self.get_base_url()
         self.selectors = self.get_selectors()
         self.config = self.get_site_config()
+        self.last_failed_cards = 0  # 마지막 추출에서 읽지 못한 카드 수
 
     @abstractmethod
     def get_base_url(self) -> str:
@@ -135,6 +139,7 @@ class WantedScraper(Scraper):
     async def extract_job_posting_data(self, page: Page) -> List[JobPostingData]:
         """Wanted 페이지에서 JobPostingData 객체 리스트 추출"""
         job_posting_data_list = []
+        failed_cards = 0
 
         try:
             job_post_elements = await page.query_selector_all(
@@ -147,10 +152,13 @@ class WantedScraper(Scraper):
                 )
                 if job_posting_data:
                     job_posting_data_list.append(job_posting_data)
+                else:
+                    failed_cards += 1
 
         except Exception as e:
             raise Exception(f"Failed to extract JobPostingData from Wanted: {e}")
 
+        self.last_failed_cards = failed_cards
         return job_posting_data_list
 
     async def _extract_single_job_posting_data(self, job_element) -> JobPostingData:
@@ -182,6 +190,8 @@ class WantedScraper(Scraper):
 
             # URL에서 posting_id 추출 (예: /wd/323478 → 323478)
             posting_id = href.split("/")[-1] if href.startswith("/wd/") else ""
+            if not posting_id:
+                return None
 
             # job_category 속성 추출 (HTML 우선, 없으면 config 매핑 fallback)
             job_category = (
@@ -199,7 +209,8 @@ class WantedScraper(Scraper):
             )
 
         except Exception as e:
-            # 개별 job 처리 실패 시 None 반환
+            # 개별 job 처리 실패 시 None 반환 (호출한 쪽이 실패로 센다)
+            logger.warning(f"⚠️ 카드 처리 실패: {e}")
             return None
 
     async def scroll_page(self, page: Page, scroll_delay: int) -> bool:
