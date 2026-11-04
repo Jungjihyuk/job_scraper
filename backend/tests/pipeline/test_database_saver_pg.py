@@ -12,6 +12,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy import text
 
+from app.api.routes.dashboard import get_dashboard_stats
 from app.core.config import db_config
 from app.core.database import db_manager
 from app.models import JobPosting, Location, ScrapedUrl, ScrapingBatch
@@ -237,3 +238,17 @@ class TestExhaustedUrls:
         manager._load_existing_posting_ids()
 
         assert manager._exhausted_urls == {three.job_url.full_url}
+
+
+class TestDashboardBatches:
+    @pytest.mark.asyncio
+    async def test_partial_counts_as_recent_batch(self, saver):
+        """부분 실패 배치도 최근 스크래핑 수에 들어간다"""
+        saver.update_batch_status("partial", 1)
+        saver.create_batch("failed", "other")
+        saver.update_batch_status("failed", 1)
+
+        with db_manager.get_session() as session:
+            stats = await get_dashboard_stats(db=session)
+
+        assert stats.recent_batches == 1

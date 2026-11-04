@@ -9,13 +9,14 @@ from pathlib import Path
 import inquirer
 
 from app.core.logging import create_development_logger
-from app.pipeline.data_models import PipelineConfig, PipelineMetrics
+from app.pipeline.data_models import (
+    PIPELINE_RESULT_PREFIX,
+    PipelineConfig,
+    PipelineMetrics,
+)
 from app.pipeline.manager import PipelineManager
 
 logger = create_development_logger(__name__)
-
-# API가 stdout에서 실행 결과를 찾는 표시. app/api/routes/scraping.py와 같아야 한다
-RESULT_PREFIX = "PIPELINE_RESULT "
 
 # 직무 선택 UI
 questions = [
@@ -64,7 +65,7 @@ def print_pipeline_result(metrics: PipelineMetrics) -> None:
         "failed": metrics.failed_count,
         "skipped": metrics.skipped_count,
     }
-    print(RESULT_PREFIX + json.dumps(result), flush=True)
+    print(PIPELINE_RESULT_PREFIX + json.dumps(result), flush=True)
 
 
 async def main(opt):

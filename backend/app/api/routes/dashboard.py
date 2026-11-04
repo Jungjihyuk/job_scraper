@@ -26,7 +26,7 @@ async def get_dashboard_stats(db: Session = Depends(get_db_session)) -> Dashboar
         
         # 최근 스크래핑 배치
         recent_batches = db.query(ScrapingBatch)\
-                           .filter(ScrapingBatch.status == 'completed')\
+                           .filter(ScrapingBatch.status.in_(['completed', 'partial']))\
                            .count()                    
                            
         return DashboardStatsResponse(

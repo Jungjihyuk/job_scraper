@@ -8,11 +8,17 @@ import asyncio
 import json
 from typing import Optional
 
+from app.pipeline.data_models import PIPELINE_RESULT_PREFIX
 from app.schemas.scraping import (
     ScrapingRequest,
     ScrapingResponse,
     ScrapingStatusResponse,
 )
+
+# 프로세스가 끝난 뒤 남은 출력을 기다리는 시간. 자식 프로세스가 파이프를 쥐고
+# 있으면 출력이 끝나지 않으므로 제한을 둔다.
+OUTPUT_DRAIN_TIMEOUT_SECONDS = 5
+EXIT_POLL_INTERVAL_SECONDS = 0.2
 
 
 router = APIRouter(prefix="/api/scraping", tags=["scraping"])
@@ -41,6 +47,72 @@ async def start_scraping(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def wait_for_exit(process: asyncio.subprocess.Process) -> int:
+    """파이프 상태와 상관없이 프로세스가 끝나기를 기다린다.
+
+    `Process.wait()`는 파이프가 모두 닫힐 때까지 돌아오지 않아, 자식 프로세스가
+    파이프를 쥐고 있으면 끝난 프로세스도 영원히 기다린다.
+
+    Args:
+        process: 기다릴 프로세스.
+
+    Returns:
+        종료 코드.
+    """
+    while process.returncode is None:
+        await asyncio.sleep(EXIT_POLL_INTERVAL_SECONDS)
+    return process.returncode
+
+
+def parse_pipeline_result(line: str) -> dict | None:
+    """stdout 한 줄이 실행 결과 줄이면 읽는다.
+
+    Args:
+        line: 앞뒤 공백을 지운 stdout 한 줄.
+
+    Returns:
+        실행 결과. 결과 줄이 아니거나 형식이 깨졌으면 None.
+    """
+    if not line.startswith(PIPELINE_RESULT_PREFIX):
+        return None
+    try:
+        result = json.loads(line.removeprefix(PIPELINE_RESULT_PREFIX))
+    except json.JSONDecodeError:
+        return None
+    return result if isinstance(result, dict) else None
+
+
+def build_finish_event(job: str, returncode: int, result: dict | None) -> dict:
+    """프로세스 종료를 알리는 WebSocket 이벤트를 만든다.
+
+    Args:
+        job: 수집한 직무.
+        returncode: 프로세스 종료 코드.
+        result: CLI가 남긴 실행 결과. 없으면 종료 코드로만 판단한다.
+
+    Returns:
+        `complete`나 `error` 이벤트.
+    """
+    event: dict = (
+        {"type": "complete", "progress": 100}
+        if returncode == 0
+        else {
+            "type": "error",
+            "message": f"❌ 스크래핑 실패 (종료 코드: {returncode})",
+        }
+    )
+    if returncode == 0:
+        partial = result is not None and result.get("status") == "partial"
+        event["message"] = (
+            f"⚠️ 스크래핑 부분 실패: {job}"
+            if partial
+            else f"✅ 스크래핑 완료: {job}"
+        )
+    if result is not None:
+        event["result"] = {**result, "job": job}
+    return event
 
 
 async def run_pipeline(scraper_type: str, job: str, scrape_mode: str = "default"):
@@ -97,15 +169,21 @@ async def run_pipeline(scraper_type: str, job: str, scrape_mode: str = "default"
             )
         )
 
+        pipeline_result = None
+
         # 실시간 출력/에러 읽기 함수들
         async def read_stdout():
+            nonlocal pipeline_result
             try:
                 while True:
                     line = await process.stdout.readline()
                     if not line:
                         break
                     line_text = line.decode("utf-8").strip()
-                    if line_text:
+                    parsed = parse_pipeline_result(line_text)
+                    if parsed is not None:
+                        pipeline_result = parsed
+                    elif line_text:
                         await manager.send_message(
                             json.dumps({"type": "log", "message": line_text})
                         )
@@ -132,35 +210,24 @@ async def run_pipeline(scraper_type: str, job: str, scrape_mode: str = "default"
         stderr_task = asyncio.create_task(read_stderr())
 
         # 프로세스 완료 대기
-        returncode = await process.wait()
+        returncode = await wait_for_exit(process)
 
-        # 태스크들 정리
-        stdout_task.cancel()
-        stderr_task.cancel()
+        # 종료 직전 출력까지 읽는다 (넘으면 wait_for가 읽기를 취소한다)
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(stdout_task, stderr_task),
+                timeout=OUTPUT_DRAIN_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            print("출력 읽기 시간 초과: 남은 출력을 버립니다")
 
         # 스크래핑 완료 시 상태 리셋
         manager.is_scraping = False
         manager.current_process = None
 
-        if returncode == 0:
-            await manager.send_message(
-                json.dumps(
-                    {
-                        "type": "complete",
-                        "message": f"✅ 스크래핑 완료: {job}",
-                        "progress": 100,
-                    }
-                )
-            )
-        else:
-            await manager.send_message(
-                json.dumps(
-                    {
-                        "type": "error",
-                        "message": f"❌ 스크래핑 실패 (종료 코드: {returncode})",
-                    }
-                )
-            )
+        await manager.send_message(
+            json.dumps(build_finish_event(job, returncode, pipeline_result))
+        )
 
     except Exception as e:
         from app.ws.manager import manager

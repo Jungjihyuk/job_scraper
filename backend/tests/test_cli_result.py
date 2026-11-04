@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.cli import RESULT_PREFIX, main, print_pipeline_result
-from app.pipeline.data_models import PipelineMetrics
+from app.cli import main, print_pipeline_result
+from app.pipeline.data_models import PIPELINE_RESULT_PREFIX, PipelineMetrics
 
 
 def _opt() -> Namespace:
@@ -22,9 +22,9 @@ def _opt() -> Namespace:
 
 def _result_line(capsys) -> dict:
     lines = capsys.readouterr().out.splitlines()
-    result = [line for line in lines if line.startswith(RESULT_PREFIX)]
+    result = [line for line in lines if line.startswith(PIPELINE_RESULT_PREFIX)]
     assert len(result) == 1
-    return json.loads(result[0].removeprefix(RESULT_PREFIX))
+    return json.loads(result[0].removeprefix(PIPELINE_RESULT_PREFIX))
 
 
 def test_result_line_has_counts(capsys):

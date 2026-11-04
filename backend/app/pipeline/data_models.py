@@ -2,6 +2,10 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
+# CLI가 실행 결과 줄 앞에 붙이고 API가 stdout에서 찾는 표시
+PIPELINE_RESULT_PREFIX = "PIPELINE_RESULT "
+
+
 @dataclass
 class JobPostingData:
     """URLCollectorStage의 리턴값 
