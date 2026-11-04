@@ -11,6 +11,23 @@ from app.pipeline.data_models import PipelineConfig, PipelineMetrics, StageResul
 from app.core.logging import create_development_logger
 
 
+def decide_batch_status(saved: int, failed: int, stage_error: bool) -> str:
+    """실행 결과로 배치 상태를 정한다.
+
+    Args:
+        saved: 실제 저장한 공고 수.
+        failed: 상세 추출 실패와 저장 실패를 합친 공고 수.
+        stage_error: URL 수집 스테이지가 실패했거나 카드를 하나도 읽지 못했는지.
+
+    Returns:
+        실패가 없으면 `completed` (신규 0건 포함), 실패가 있어도 저장한 공고가
+        있으면 `partial`, 저장한 공고가 없으면 `failed`.
+    """
+    if not failed and not stage_error:
+        return "completed"
+    return "partial" if saved > 0 else "failed"
+
+
 class PipelineManager:
     """🔄 교대 처리용 Pipeline 관리자 - 스크롤-검증 사이클"""
 
