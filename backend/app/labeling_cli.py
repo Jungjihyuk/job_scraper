@@ -13,6 +13,19 @@ Usage:
     uv run app/labeling_cli.py company-import --input label_studio/cli_pipeline/companies_labeled.csv --dry-run
     uv run app/labeling_cli.py company-import --input label_studio/cli_pipeline/companies_labeled.csv
 
+    # domain_l1 백필 (domain_l2 → domain_l1 자동 매핑)
+    uv run app/labeling_cli.py backfill-l1 --dry-run
+    uv run app/labeling_cli.py backfill-l1
+
+    # specialty_l1/l2 백필 (기존 공고에 직무 분류 적용)
+    uv run app/labeling_cli.py backfill-specialty --dry-run
+    uv run app/labeling_cli.py backfill-specialty
+    uv run app/labeling_cli.py backfill-specialty --overwrite --limit 100
+
+    # experience_category_id 백필 (경력 텍스트 → ExperienceCategory 연결)
+    uv run app/labeling_cli.py backfill-experience --dry-run
+    uv run app/labeling_cli.py backfill-experience
+
     # Taxonomy 기반 재라벨링 (FR-058)
     uv run app/labeling_cli.py relabel --dry-run
     uv run app/labeling_cli.py relabel --target domain
@@ -24,7 +37,14 @@ import sys
 
 from app.core.database import db_manager
 from app.core.logging import create_development_logger
-from app.services.labeling import export_postings, import_labeled
+from app.services.labeling import (
+    export_postings,
+    import_labeled,
+    backfill_domain_l1,
+    backfill_experience_category,
+    backfill_specialty,
+    normalize_domain_l2,
+)
 from app.services.company_labeling import export_companies, import_company_types
 from app.services.relabeling import count_relabel_targets, relabel_postings
 
@@ -93,6 +113,73 @@ def cmd_company_import(args):
         f"Skipped: {result['skipped']}, "
         f"Not found: {result['not_found']}, "
         f"Invalid type: {result['invalid_type']}"
+    )
+
+
+def cmd_normalize_l2(args):
+    """레거시 domain_l2 → 표준 L2로 교정 + L1 채우기."""
+    with db_manager.get_session() as session:
+        result = normalize_domain_l2(
+            session=session,
+            dry_run=args.dry_run,
+        )
+
+    prefix = "[DRY-RUN] " if args.dry_run else ""
+    print(
+        f"{prefix}Total legacy: {result['total_legacy']}, "
+        f"Normalized: {result['normalized']}"
+    )
+
+
+def cmd_backfill_experience(args):
+    """experience 텍스트 → ExperienceCategory 연결 백필."""
+    with db_manager.get_session() as session:
+        result = backfill_experience_category(
+            session=session,
+            dry_run=args.dry_run,
+            limit=args.limit,
+        )
+
+    prefix = "[DRY-RUN] " if args.dry_run else ""
+    print(
+        f"{prefix}Total target: {result['total_target']}, "
+        f"Linked: {result['linked']}, "
+        f"No text: {result['no_text']}, "
+        f"Failed: {result['failed']}"
+    )
+
+
+def cmd_backfill_specialty(args):
+    """기존 공고에 specialty_l1/l2 백필."""
+    with db_manager.get_session() as session:
+        result = backfill_specialty(
+            session=session,
+            dry_run=args.dry_run,
+            overwrite=args.overwrite,
+            limit=args.limit,
+        )
+
+    prefix = "[DRY-RUN] " if args.dry_run else ""
+    print(
+        f"{prefix}Total target: {result['total_target']}, "
+        f"Classified: {result['classified']}, "
+        f"Unclassified: {result['unclassified']}"
+    )
+
+
+def cmd_backfill_l1(args):
+    """domain_l2 → domain_l1 백필."""
+    with db_manager.get_session() as session:
+        result = backfill_domain_l1(
+            session=session,
+            dry_run=args.dry_run,
+        )
+
+    prefix = "[DRY-RUN] " if args.dry_run else ""
+    print(
+        f"{prefix}Total missing: {result['total_missing']}, "
+        f"Filled: {result['filled']}, "
+        f"Invalid L2: {result['invalid']}"
     )
 
 
@@ -226,6 +313,69 @@ def main():
         help="이미 분류된 기업은 건너뜀",
     )
 
+    # normalize-l2
+    nl_parser = subparsers.add_parser(
+        "normalize-l2",
+        help="레거시 domain_l2를 표준 L2로 교정 + L1 채우기",
+    )
+    nl_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="실제 변경 없이 대상 건수만 확인",
+    )
+
+    # backfill-experience
+    be_parser = subparsers.add_parser(
+        "backfill-experience",
+        help="experience 텍스트 → ExperienceCategory 연결 백필",
+    )
+    be_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="실제 변경 없이 대상 건수만 확인",
+    )
+    be_parser.add_argument(
+        "--limit",
+        "-l",
+        type=int,
+        default=None,
+        help="처리할 최대 건수",
+    )
+
+    # backfill-specialty
+    bs_parser = subparsers.add_parser(
+        "backfill-specialty",
+        help="기존 공고에 specialty_l1/l2 백필 (키워드 기반 직무 분류)",
+    )
+    bs_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="실제 변경 없이 대상 건수만 확인",
+    )
+    bs_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="이미 값이 있는 레코드도 재분류",
+    )
+    bs_parser.add_argument(
+        "--limit",
+        "-l",
+        type=int,
+        default=None,
+        help="처리할 최대 건수",
+    )
+
+    # backfill-l1
+    bf_parser = subparsers.add_parser(
+        "backfill-l1",
+        help="domain_l2는 있지만 domain_l1이 비어있는 레코드 백필",
+    )
+    bf_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="실제 변경 없이 대상 건수만 확인",
+    )
+
     # relabel (FR-058)
     relabel_parser = subparsers.add_parser(
         "relabel", help="Taxonomy 기반 재라벨링"
@@ -265,6 +415,14 @@ def main():
             cmd_company_export(args)
         elif args.command == "company-import":
             cmd_company_import(args)
+        elif args.command == "normalize-l2":
+            cmd_normalize_l2(args)
+        elif args.command == "backfill-experience":
+            cmd_backfill_experience(args)
+        elif args.command == "backfill-specialty":
+            cmd_backfill_specialty(args)
+        elif args.command == "backfill-l1":
+            cmd_backfill_l1(args)
         elif args.command == "relabel":
             cmd_relabel(args)
     finally:

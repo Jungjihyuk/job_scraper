@@ -1,11 +1,11 @@
 """
-DB에서 domain이 NULL인 채용공고를 Label Studio에 자동 import.
+DB에서 domain_l2가 NULL인 채용공고를 Label Studio에 자동 import.
 새로운 공고가 수집될 때마다 실행하여 라벨링 대상을 추가.
 포지션 상세, 주요 업무, 자격요건, 우대사항을 모두 포함.
 
 사용법:
-    python label_studio/scripts/import_from_db.py
-    python label_studio/scripts/import_from_db.py --limit 200
+    cd backend && uv run ../label_studio/scripts/import_from_db.py
+    cd backend && uv run ../label_studio/scripts/import_from_db.py --limit 200
 """
 
 import argparse
@@ -58,7 +58,7 @@ def save_imported_ids(ids: set):
 
 
 def fetch_unlabeled_postings(limit: int = 500) -> list[dict]:
-    """domain이 NULL인 채용공고를 DB에서 조회 (상세 컬럼 포함)"""
+    """domain_l2가 NULL인 채용공고를 DB에서 조회 (상세 컬럼 포함)"""
     if not init_database():
         return []
 
@@ -69,9 +69,10 @@ def fetch_unlabeled_postings(limit: int = 500) -> list[dict]:
                        LEFT(position_detail, 2000) as position_detail,
                        LEFT(main_tasks, 2000) as main_tasks,
                        LEFT(requirements, 2000) as requirements,
-                       LEFT(preferred, 2000) as preferred
+                       LEFT(preferred, 2000) as preferred,
+                       core_technologies
                 FROM job_posting
-                WHERE domain IS NULL
+                WHERE domain_l2 IS NULL
                 ORDER BY posted_date DESC NULLS LAST
                 LIMIT :limit
             """),
@@ -86,6 +87,7 @@ def fetch_unlabeled_postings(limit: int = 500) -> list[dict]:
                 "main_tasks": row[3] or "",
                 "requirements": row[4] or "",
                 "preferred": row[5] or "",
+                "core_technologies": row[6] or [],
             }
             for row in rows
         ]
@@ -111,7 +113,7 @@ def import_to_label_studio(postings: list[dict], imported_ids: set) -> int:
                 "requirements": _format_html(p["requirements"]),
                 "preferred": _format_html(p["preferred"]),
                 "ai_domain": "미분류",
-                "ai_techs": "추출된 기술 없음",
+                "ai_techs": ", ".join(p["core_technologies"]) or "추출된 기술 없음",
             }
         }
         for p in new_postings

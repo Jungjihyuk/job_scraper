@@ -2,9 +2,9 @@
 staging → production UPSERT: 검수 완료된 도메인 데이터를 job_posting 테이블에 반영.
 
 사용법:
-    python analysis/scripts/apply_reviewed_domains.py
-    python analysis/scripts/apply_reviewed_domains.py --dry-run
-    python analysis/scripts/apply_reviewed_domains.py --batch-size 500
+    cd backend && uv run python ../analysis/scripts/apply_reviewed_domains.py
+    cd backend && uv run python ../analysis/scripts/apply_reviewed_domains.py --dry-run
+    cd backend && uv run python ../analysis/scripts/apply_reviewed_domains.py --batch-size 500
 """
 
 import argparse
@@ -17,6 +17,7 @@ sys.path.insert(0, str(project_root))
 
 from app.core.database import db_manager, init_database
 from app.core.logging import create_development_logger
+from app.services.labeling import DOMAIN_L2_TO_L1, LEGACY_L2_TO_STANDARD_L2
 from sqlalchemy import text
 
 logger = create_development_logger(__name__)
@@ -25,7 +26,8 @@ logger = create_development_logger(__name__)
 def apply_reviewed_domains(batch_size: int = 100, dry_run: bool = False):
     """
     domain_review_staging에서 status='pending'인 행을 읽어
-    job_posting.domain을 UPDATE한다.
+    job_posting.domain_l2/domain_l1을 UPDATE한다.
+    reviewed_domain은 L2 값이며, L1은 DOMAIN_L2_TO_L1로 역산한다.
     """
     if not init_database():
         logger.error("Failed to initialize database")
@@ -56,6 +58,9 @@ def apply_reviewed_domains(batch_size: int = 100, dry_run: bool = False):
 
             for row in rows:
                 staging_id, posting_id, reviewed_domain = row
+                domain_l2 = LEGACY_L2_TO_STANDARD_L2.get(
+                    reviewed_domain, reviewed_domain
+                )
 
                 # job_posting에서 해당 posting_id 존재 확인
                 exists = session.execute(
@@ -65,8 +70,13 @@ def apply_reviewed_domains(batch_size: int = 100, dry_run: bool = False):
                     {"pid": posting_id},
                 ).fetchone()
 
-                if not exists:
-                    logger.warning(f"posting_id {posting_id} not found, marking rejected")
+                if not exists or domain_l2 not in DOMAIN_L2_TO_L1:
+                    reason = (
+                        "not found"
+                        if not exists
+                        else f"invalid domain L2 '{reviewed_domain}'"
+                    )
+                    logger.warning(f"posting_id {posting_id} {reason}, marking rejected")
                     if not dry_run:
                         session.execute(
                             text("""
@@ -79,17 +89,23 @@ def apply_reviewed_domains(batch_size: int = 100, dry_run: bool = False):
                     skipped += 1
                     continue
 
+                domain_l1 = DOMAIN_L2_TO_L1[domain_l2]
+
                 if dry_run:
-                    print(f"  [DRY RUN] {posting_id}: -> {reviewed_domain}")
+                    print(f"  [DRY RUN] {posting_id}: -> {domain_l1} › {domain_l2}")
                 else:
                     # Production 테이블 UPDATE
                     session.execute(
                         text("""
                             UPDATE job_posting
-                            SET domain = :domain
+                            SET domain_l2 = :domain_l2, domain_l1 = :domain_l1
                             WHERE posting_id = :pid
                         """),
-                        {"domain": reviewed_domain, "pid": posting_id},
+                        {
+                            "domain_l2": domain_l2,
+                            "domain_l1": domain_l1,
+                            "pid": posting_id,
+                        },
                     )
                     # Staging status 업데이트
                     session.execute(

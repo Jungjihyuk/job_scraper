@@ -1,0 +1,33 @@
+# lanternspec가 생성 — 양식 · 린트 · 타입 검사 · 수락 기준 테스트 · 문서-코드 어긋남을 CI에서도 본다
+name: lanternspec
+on: [push, pull_request]
+jobs:
+  docs-and-acceptance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install lanternspec
+      # 프로젝트 도구 · 의존성 준비 — lantern.yaml project.languages와 lock 파일에서 (lantern upgrade가 맞춘다)
+      - name: Python 도구 준비 (uv)
+        uses: astral-sh/setup-uv@v10.3.2
+      - name: Python 도구 준비 (uv)
+        run: uv sync
+      - name: TypeScript 도구 준비 (pnpm)
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+      - name: TypeScript 도구 준비 (pnpm)
+        run: npm install -g pnpm && pnpm install
+      - name: 양식 검사 (lantern check)
+        run: lantern check --quiet
+        if: hashFiles('lantern.yaml') != ''
+      - name: 린트 · 타입 검사 (lantern lint — build.lint · build.typecheck)
+        run: lantern lint
+        if: hashFiles('lantern.yaml') != ''
+      - name: 문서-코드 어긋남 + 수락 기준 테스트 (lantern scan --tests)
+        run: lantern scan --tests

@@ -9,6 +9,7 @@ class ScrapingRequest(BaseModel):
     """스크래핑 시작 요청 스키마"""
     scraper_type: str = "wanted"
     job: str = "파이썬 개발자"
+    scrape_mode: str = "default"  # "default" | "incremental" | "full"
 
 
 class ScrapingResponse(BaseModel):

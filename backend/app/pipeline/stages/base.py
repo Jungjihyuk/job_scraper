@@ -6,8 +6,34 @@ from app.core.logging import create_development_logger
 from app.pipeline.data_models import StageResult
 
 class BaseStage(ABC):
-    """🔗 Pipeline Stage 기본 클래스"""
-    
+    """파이프라인 스테이지의 공통 동작을 정의하는 추상 클래스.
+
+    모든 스테이지가 공유하는 공통 실행 흐름(시간 측정 로깅, 에러 처리, 결과 래핑)을
+    `execute()` 에 구현하고, 각 스테이지 고유의 핵심 로직은
+    `process()` 를 오버라이드하여 채우도록 설계되었다 (Template Method 패턴).
+
+    상속만으로 다음 기능을 즉시 사용할 수 있다:
+        - 스테이지 이름 기반 자동 로거 생성 (로거는 상황에 따라 메소드 교체 가능)
+        - 처리 항목·실패 항목·실행 시간 메트릭 자동 수집
+        - 선택적 중복 체크 (`enable_duplicate_check=True`)
+
+    Attributes:
+        name: 스테이지 식별자. 로그와 `StageResult` 에 사용된다.
+        logger: `pipeline.{name}` 네임스페이스의 개발용 로거.
+        enable_duplicate_check: `True` 이면 `is_duplicate()` 로
+            이미 처리된 항목을 건너뛸 수 있다.
+        processed_items: 중복 판별용으로 처리 완료된 항목 ID 집합.
+        metrics: `items_processed`, `items_failed`,
+            `execution_time` 을 추적하는 딕셔너리.
+
+    Example:
+        >>> class MyStage(BaseStage):
+        ...     async def process(self, data):
+        ...         # 스테이지 고유 로직 구현
+        ...         return transformed_data
+        >>> result = await MyStage("my_stage").execute(input_data)
+    """
+
     def __init__(self, name: str, enable_duplicate_check: bool = False):
         self.name = name
         self.logger = create_development_logger(f"pipeline.{name}")

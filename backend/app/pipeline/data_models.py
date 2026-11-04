@@ -59,6 +59,8 @@ class PipelineConfig:
     batch_size: int = 5
     request_timeout: int = 10
     enable_duplicate_check: bool = True
+    # 수집 모드: "default" (max_scrolls), "incremental" (신규 없으면 조기 종료), "full" (페이지 끝까지)
+    scrape_mode: str = "default"
     # 저장 설정
     save_to_database: bool = True
     save_to_local: bool = False

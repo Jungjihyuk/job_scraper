@@ -1,0 +1,166 @@
+{
+  "ci": true,
+  "files": {
+    ".agents/skills/l-adr/SKILL.md": "9cfb6ef6dc9763573c90459d43c6892a5d336c62f4747f8cc67b57dde78e80fe",
+    ".agents/skills/l-build/SKILL.md": "b6c4a5556d03307aa109ac972c15e1431189d3185927e9b2b6d98b325d550f44",
+    ".agents/skills/l-check/SKILL.md": "6116f888f5c9bb65baf3db649e4d5361cf54e0fc30eb44f98a0df19cc7300e0c",
+    ".agents/skills/l-design/SKILL.md": "faa790ed05fa2f26152cd871f271fe05884344f477310944c7d47415010d8173",
+    ".agents/skills/l-domain/SKILL.md": "afb7c88b5b854a5cf8d44e236b3adb42cd959516529b9e524a93bb642079db12",
+    ".agents/skills/l-idea/SKILL.md": "6a79b66cd764c817e38655602561cfe680801a0dd68e9c63d1c3318b915130ee",
+    ".agents/skills/l-idea/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
+    ".agents/skills/l-init/SKILL.md": "fb1bd902b159ee1f5020df603023d282013bf0942a3f178b985d4d68d0ee2b14",
+    ".agents/skills/l-init/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
+    ".agents/skills/l-learn/SKILL.md": "d30513965b208cb07ad770f5ab5e3aca939b3b26fa9e9896e3b664fda046b047",
+    ".agents/skills/l-map/SKILL.md": "fb9b61d537e13b0937f77f7c20b84c5c080417c2849ed09f7e34506faa7eae17",
+    ".agents/skills/l-plan/SKILL.md": "247f12c6128b6f7a4d41bf4c44cd705cb52dec7b3043e0b500d200fde1d32e04",
+    ".agents/skills/l-ref/SKILL.md": "03617a8b81a3b2ce982f3626ae327c14028bb2528937b9ad53d248a634a1b207",
+    ".agents/skills/l-ref/agents/openai.yaml": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
+    ".agents/skills/l-ref/domain.md": "423217f02ab66165b19303b224a3dab71dfb0e6cd547f268e9769122a047f862",
+    ".agents/skills/l-ref/rules.md": "8ca174d7f7e1c87188dcc5ba74efcdaac2f96871caa6a88d34e868d4d31f34bc",
+    ".agents/skills/l-ref/terms.md": "32f3b5e099e34264acf000f62b7ad19030fc484f787a67fb993d956ed9eaccc3",
+    ".agents/skills/l-report/SKILL.md": "8d0f522949f5dfdebdc3e9ebe7ba60fd6d3475ba7245bd513affcf80b86de0e0",
+    ".agents/skills/l-resume/SKILL.md": "2d2e86a0a9c51ca8ed16416ad7424dea870b9eba6d0406e283a52c61d500508c",
+    ".agents/skills/l-sync/SKILL.md": "ff0c5f2c25a9f7725ffda45b2fcffeadf1a25eb7c9ec3e8f94dd283b24a62970",
+    ".agents/skills/l-task/SKILL.md": "e96eec0e38624c4cc7777774c35a1ab6f3695e2ed51452a07b5622b4b4e92f60",
+    ".agents/skills/l-template/SKILL.md": "0c3a073354fc97f431e03a85f5e638e25986148c98c82ddc923692ea130db10f",
+    ".claude/skills/l-adr/SKILL.md": "0dc50f977063aa91d7fc7624671c581944cd60fd0c8bc0576be61f445af7b8aa",
+    ".claude/skills/l-build/SKILL.md": "66a8b586f4b7b38fe316e7632adc2ace1efe548ae6a14abe58f67e370c54f0a5",
+    ".claude/skills/l-check/SKILL.md": "83cc656828365ad5bae95c9f07601f503938e068809203bcc983092abb06f75c",
+    ".claude/skills/l-design/SKILL.md": "4af6b52967251a0c75c6ab018c71d229739f7e181f429e6961340189a4fdc0bd",
+    ".claude/skills/l-domain/SKILL.md": "a8513ab8b057c83f7ac8fac6fc9f85314c1402f8d6c30ae9a022a1a879d51a31",
+    ".claude/skills/l-idea/SKILL.md": "9a825c425453ba8bf62d806208839469e6d6b8221c8c02eadadfcd2c16b199ce",
+    ".claude/skills/l-init/SKILL.md": "0fe66100c0cb0912301c22de1e72776879b2d6cf595173a54ea1318043673078",
+    ".claude/skills/l-learn/SKILL.md": "9cc868cca5ea0931d5b5b02fd0f4bcb87a676fdab062ba7de722fa65f0ffdde0",
+    ".claude/skills/l-map/SKILL.md": "5114588b0d735ba869933df52b0144ca050521d012842fb778d3ee3d7a88ad52",
+    ".claude/skills/l-plan/SKILL.md": "400ab82d1dcd8d6cbe75f0b663bed9741d8d097ac4de987629555c54eef4a1d6",
+    ".claude/skills/l-ref/SKILL.md": "4eb88596df1232283e8a9da69b164464bcacd5c0fc317666660d36e8e326a2b1",
+    ".claude/skills/l-ref/domain.md": "423217f02ab66165b19303b224a3dab71dfb0e6cd547f268e9769122a047f862",
+    ".claude/skills/l-ref/rules.md": "8ca174d7f7e1c87188dcc5ba74efcdaac2f96871caa6a88d34e868d4d31f34bc",
+    ".claude/skills/l-ref/terms.md": "32f3b5e099e34264acf000f62b7ad19030fc484f787a67fb993d956ed9eaccc3",
+    ".claude/skills/l-report/SKILL.md": "dce6b29c25fa20e23da417fbecde14a1e9ad903d3eb888cdba12114a1a8122b5",
+    ".claude/skills/l-resume/SKILL.md": "336913c25491309b6f810035f8e41c8d4ca863a820cc6a020774e9f8ae2d5209",
+    ".claude/skills/l-sync/SKILL.md": "4273f7fdcd9b626f3855e3fe76eacb7f55889cebdc98a6edd45fa30e88c6b09c",
+    ".claude/skills/l-task/SKILL.md": "752649227d518511c077ced8a7dc6a6dd6303f417ab70aba0bec274ff72ed1e1",
+    ".claude/skills/l-template/SKILL.md": "d33fba404164c3929d0b272a8b8841b39357256e6d9ddc2d917d259d12e9af90",
+    ".github/workflows/lanternspec.yml": "0ec4a49e8d9a388fa8658d094b81f95ae906c9e73e5b1246756b6a8b48716836"
+  },
+  "language": "ko",
+  "mcp": false,
+  "parts": [
+    "analysis",
+    "backend",
+    "frontend"
+  ],
+  "templates": {
+    "ADR": {
+      "based_on": "1.0.1",
+      "sha256": "3a5f1180fc8c262c92eccf07cf8f9c2be99b3a2c4bd4114ab18fd9bab78e30fa"
+    },
+    "API": {
+      "based_on": "1.0.1",
+      "sha256": "93fd2ee74c551b7c55e9b9f4c25af94f9bb3ba0f636723ea27a1d9177e87fe23"
+    },
+    "_meta/enums.yaml": {
+      "based_on": "1",
+      "sha256": "3074e5f3d755e32fd3903bf9aaf67f275400669121958c366684fa59759552b9"
+    },
+    "개발문서 MOC": {
+      "based_on": "1.0.1",
+      "sha256": "cabae20ad3f7fff81133eb5d050db4ef26b3f26bba24a8e067871116e04bb601"
+    },
+    "기능 목록": {
+      "based_on": "1.0.1",
+      "sha256": "ec7081310c6b748c503d09ac1ecc874488269cc46c20fed1ce29349cec5b5494"
+    },
+    "기록": {
+      "based_on": "1.0.1",
+      "sha256": "8fd390005812e0bb7892b20454c65d40b54a0b42e8427678736f25868d978df4"
+    },
+    "기존 문서 지도": {
+      "based_on": "1.0.1",
+      "sha256": "16a34536c883c6517cbe7a1bd821e9d48fe2b37c85380c87600e348166c7bd3b"
+    },
+    "기획": {
+      "based_on": "1.1.1",
+      "sha256": "410981862bcc753202fcb9f34cfe79692379113a96ab66e3ebd0e56100180e6b"
+    },
+    "데이터": {
+      "based_on": "1.0.1",
+      "sha256": "c05676a62fa02464053ef9c6393a3a160ae8882e6ee263f64fcbaa1f234a43b4"
+    },
+    "배포": {
+      "based_on": "1.0.0",
+      "sha256": "6f4b4293fcb5b9bc12478fe98e52255b456d389fa8b970fb29411ecea14109e5"
+    },
+    "부채 카드": {
+      "based_on": "1.0.1",
+      "sha256": "9165717c07091d2e3a0aa64793f31e3b23c6be24de51b98285e9103fa1f650ee"
+    },
+    "서버 배포 · 운영": {
+      "based_on": "1.0.0",
+      "sha256": "64e00ce11090e5b70e0a97654c65a00d66cb70708265f98c10d955dac01e3f6e"
+    },
+    "설계": {
+      "based_on": "1.0.1",
+      "sha256": "a90cd008cff3ca4e31af6a465b2197251fe15d8c152a8a2e02c416b6d38a8f15"
+    },
+    "세션 기록": {
+      "based_on": "1.0.1",
+      "sha256": "104f6fe4e30b504a64f9b58a965c60300f4ea84955d3c0c7d8402197d6655e45"
+    },
+    "시스템 구조": {
+      "based_on": "1.0.1",
+      "sha256": "fe8046b1b85ec57064891c370ec6a7d5e67e954aa71c2b6e6a210171299d691c"
+    },
+    "아는 기술": {
+      "based_on": "1.0.1",
+      "sha256": "4ab1beb4862aa04c705aecf888ad0a248edd161dd35bf5e938756746af857af6"
+    },
+    "아이디어": {
+      "based_on": "1.0.1",
+      "sha256": "8c2c38e39664623ad88a5e8722fff9be8e76c0dece24ac3f351e23920f841066"
+    },
+    "역량 카드": {
+      "based_on": "1.0.1",
+      "sha256": "fe999c02aa6120a9bf3db345908f3b0133cea232c707313b00f2be927ceedd6e"
+    },
+    "용어집": {
+      "based_on": "1.0.1",
+      "sha256": "fee50934f3026fb3f14fbc549831eb267782da370e33fb3e56d279b5bbde6ca9"
+    },
+    "작업 나누기 기준": {
+      "based_on": "1.1.1",
+      "sha256": "6f2eb7e5e2b094beb122af6e9e2df03e2ca57b5459b59c3f4619c4f1d088b4d2"
+    },
+    "프로젝트 정의서": {
+      "based_on": "1.0.1",
+      "sha256": "1a726d927aa9c4b98c7bd6124540445afd33eac3de98c69fd74c28e725b12dc6"
+    },
+    "플랫폼 연동": {
+      "based_on": "1.0.0",
+      "sha256": "1d940334521684f91cc461543cbe79ed41bda401307cddfd55c339a3aab31953"
+    },
+    "할 일": {
+      "based_on": "1.0.2",
+      "sha256": "ac301692a10f789db987da5d45afdf075eb0791f2c5f3bd0cbad2bba62f61236"
+    },
+    "협업 규칙": {
+      "based_on": "1.1.0",
+      "sha256": "47ed8dc3ee0c432785aa56155bf029eaf4c1c02f45b5dcd008c0aa598139a31c"
+    },
+    "화면": {
+      "based_on": "1.0.1",
+      "sha256": "2849820cbce471b14066e7b07a8903fe53a366a8b435113952190172fa955abf"
+    },
+    "회의록": {
+      "based_on": "1.0.1",
+      "sha256": "392da449dbdd120ed493ea490e0a11cf9e6f889d1860bcafd7e358551d9f7d84"
+    }
+  },
+  "tools": [
+    "claude",
+    "codex",
+    "antigravity"
+  ],
+  "version": "0.2.7"
+}
