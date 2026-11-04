@@ -22,14 +22,12 @@ class WantedSelectors:
     """🎯 Wanted 사이트 셀렉터 상수"""
 
     CONTENT_WRAPPER = "section.JobContent_descriptionWrapper__RMlfm"
-    TITLE = "h1.wds-58fmok"
-    POSITION_DETAIL = (
-        "div.JobDescription_JobDescription__paragraph__wrapper__WPrKC span.wds-h4ga6o"
-    )
+    TITLE = "h1"
+    POSITION_DETAIL = "div[class*='JobDescription__paragraph__wrapper__'] span"
     JOBDESCRIPTION = "div.JobDescription_JobDescription__paragraph__87w8I"
     COMPANY_TAGS = "ul.CompanyTags_CompanyTags__list__XmzkW li"
-    DEADLINE = "span.wds-1u1yyy"
-    WORK_PLACE = "div.JobWorkPlace_JobWorkPlace__map__location__6pp2d span.wds-1td1qmv"
+    DEADLINE = "article[class*='JobDueTime_JobDueTime__'] span"
+    WORK_PLACE = "div[class*='JobWorkPlace__map__location__'] span"
     EXPAND_BUTTON = "button:has(span:text('상세 정보 더 보기'))"
     LOCATION = "div.JobHeader_JobHeader__Tools__lyxqQ span.JobHeader_JobHeader__Tools__Company__Info__b9P4Y"
     EXPERIENCE = "div.JobHeader_JobHeader__Tools__lyxqQ span.JobHeader_JobHeader__Tools__Company__Info__b9P4Y"
