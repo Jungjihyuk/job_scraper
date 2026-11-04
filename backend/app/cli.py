@@ -1,5 +1,6 @@
 # main_pipeline.py
 import argparse
+import json
 import sys
 import time
 import asyncio
@@ -8,10 +9,13 @@ from pathlib import Path
 import inquirer
 
 from app.core.logging import create_development_logger
-from app.pipeline.data_models import PipelineConfig
+from app.pipeline.data_models import PipelineConfig, PipelineMetrics
 from app.pipeline.manager import PipelineManager
 
 logger = create_development_logger(__name__)
+
+# API가 stdout에서 실행 결과를 찾는 표시. app/api/routes/scraping.py와 같아야 한다
+RESULT_PREFIX = "PIPELINE_RESULT "
 
 # 직무 선택 UI
 questions = [
@@ -47,6 +51,22 @@ def get_job_selection():
     return answers["job"][0]  # 첫 번째 선택된 직무만 사용
 
         
+def print_pipeline_result(metrics: PipelineMetrics) -> None:
+    """실행 결과를 API가 읽을 수 있는 한 줄로 stdout에 찍는다.
+
+    Args:
+        metrics: 실행이 끝난 파이프라인의 메트릭.
+    """
+    result = {
+        "status": metrics.batch_status,
+        "collected": metrics.total_urls_collected,
+        "saved": metrics.saved_count,
+        "failed": metrics.failed_count,
+        "skipped": metrics.skipped_count,
+    }
+    print(RESULT_PREFIX + json.dumps(result), flush=True)
+
+
 async def main(opt):
     """🚀 메인 실행 함수"""
     # 수집 모드 결정
@@ -85,10 +105,16 @@ async def main(opt):
     pipeline_manager = PipelineManager(config)
     
     # 파이프라인 실행 (기본 저장 방식 사용)
-    metrics = await pipeline_manager.run()
-    
+    try:
+        metrics = await pipeline_manager.run()
+    except Exception:
+        pipeline_manager.metrics.batch_status = "failed"
+        print_pipeline_result(pipeline_manager.metrics)
+        raise
+
+    print_pipeline_result(metrics)
     logger.info(f"🎉 전체 파이프라인 완료! 총 {metrics.valid_urls + metrics.invalid_urls}건의 URL을 검증했습니다.")
-    return metrics.valid_urls > 0 or metrics.invalid_urls > 0
+    return metrics.batch_status != "failed"
 
 
 def parse_opt(known=False):
