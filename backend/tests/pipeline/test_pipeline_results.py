@@ -382,3 +382,48 @@ class TestFileSaveFailures:
         metrics = await mgr.run()
 
         assert metrics.file_save_failures == 1
+
+
+class TestRetryLimit:
+    @pytest.mark.asyncio
+    async def test_exhausted_url_is_not_scraped_and_counted(self):
+        """AC-18: 제한에 걸린 공고는 시도하지 않고 건너뛴 건수에 세어진다"""
+        mgr = _manager()
+        ok = make_job_details("2")
+        mgr._exhausted_urls = {make_job_posting(posting_id="1").full_url}
+        mgr._collect_urls = AsyncMock(return_value=_collect("1", "2"))
+        mgr._scrape_content = AsyncMock(return_value=_scraped(ok))
+        _wire_save(mgr, JobSaveResult(saved=[ok]))
+
+        metrics = await mgr.run()
+
+        scraped = mgr._scrape_content.call_args.args[0]
+        assert [u.job_url.posting_id for u in scraped] == ["2"]
+        assert metrics.skipped_count == 1
+        assert metrics.batch_status == "completed"
+        assert _batch_call(mgr).kwargs["skipped"] == 1
+
+    @pytest.mark.asyncio
+    async def test_only_exhausted_postings_end_completed(self):
+        mgr = _manager()
+        mgr._exhausted_urls = {make_job_posting(posting_id="1").full_url}
+        mgr._collect_urls = AsyncMock(return_value=_collect("1"))
+        mgr._validate_urls = AsyncMock()
+
+        metrics = await mgr.run()
+
+        mgr._validate_urls.assert_not_called()
+        assert metrics.skipped_count == 1
+        assert metrics.batch_status == "completed"
+
+    @pytest.mark.asyncio
+    async def test_existing_posting_is_not_counted_as_skipped(self):
+        mgr = _manager()
+        posting = make_job_posting(posting_id="1")
+        mgr._existing_posting_ids = {"1"}
+        mgr._exhausted_urls = {posting.full_url}
+        mgr._collect_urls = AsyncMock(return_value=_collect("1"))
+
+        metrics = await mgr.run()
+
+        assert metrics.skipped_count == 0

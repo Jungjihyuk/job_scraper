@@ -7,6 +7,7 @@ DB_* 환경변수로 가리키고 RUN_DB_TESTS=1을 줄 때만 실행하며, 프
 
 import os
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import text
@@ -15,7 +16,12 @@ from app.core.config import db_config
 from app.core.database import db_manager
 from app.models import JobPosting, Location, ScrapedUrl, ScrapingBatch
 from app.models.base import Base
-from app.pipeline.data_models import JobDetails, JobSaveResult
+from app.pipeline.data_models import (
+    JobDetails,
+    JobSaveResult,
+    PipelineConfig,
+)
+from app.pipeline.manager import PipelineManager
 from app.pipeline.stages.database_saver import DatabaseSaverStage, url_hash
 from tests.conftest import make_job_posting, make_validated_url
 
@@ -206,3 +212,28 @@ class TestUpdateBatchStatus:
             assert batch.failed_count == 2
             assert batch.skipped_count == 1
             assert batch.completed_at is not None
+
+
+class TestExhaustedUrls:
+    @pytest.mark.asyncio
+    async def test_three_failures_load_as_exhausted(self, saver):
+        """AC-18: 3회 실패한 URL만 제한 목록에 오른다"""
+        await saver.execute([make_validated_url("1"), make_validated_url("2")])
+        three = _details("1")
+        three.error_message = "실패"
+        two = _details("2")
+        two.error_message = "실패"
+        for _ in range(3):
+            saver.record_failures([three])
+        for _ in range(2):
+            saver.record_failures([two])
+
+        with patch("app.pipeline.manager.URLCollectorStage"), patch(
+            "app.pipeline.manager.URLValidatorStage"
+        ), patch("app.pipeline.manager.ContentScraperStage"), patch(
+            "app.pipeline.manager.JobNormalizerStage"
+        ):
+            manager = PipelineManager(PipelineConfig(job="서버 개발자"))
+        manager._load_existing_posting_ids()
+
+        assert manager._exhausted_urls == {three.job_url.full_url}

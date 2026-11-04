@@ -19,6 +19,10 @@ from app.pipeline.data_models import (
 from app.core.logging import create_development_logger
 
 
+# 이 횟수만큼 실패한 공고는 정리 명령으로 초기화하기 전까지 다시 수집하지 않는다
+MAX_SCRAPE_FAILURES = 3
+
+
 def decide_batch_status(saved: int, failed: int, stage_error: bool) -> str:
     """실행 결과로 배치 상태를 정한다.
 
@@ -63,14 +67,16 @@ class PipelineManager:
 
         # DB 조기 필터링용 기존 posting_id 캐시
         self._existing_posting_ids: set = set()
+        # 실패 횟수 제한에 걸린 공고 URL
+        self._exhausted_urls: set = set()
 
         self.logger.info(f"🔄 Interactive Pipeline initialized for job: {config.job}")
 
     def _load_existing_posting_ids(self):
-        """DB에서 기존 posting_id 목록을 일괄 로드하여 캐시"""
+        """DB에서 기존 posting_id와 실패 횟수 제한에 걸린 URL을 일괄 로드하여 캐시"""
         try:
             from app.core.database import db_manager
-            from app.models import JobPosting
+            from app.models import JobPosting, ScrapedUrl
 
             if not db_manager._initialized:
                 db_manager.initialize()
@@ -81,17 +87,24 @@ class PipelineManager:
                 self.logger.info(
                     f"📦 Loaded {len(self._existing_posting_ids)} existing posting IDs from DB"
                 )
+                rows = (
+                    session.query(ScrapedUrl.url)
+                    .filter(ScrapedUrl.retry_count >= MAX_SCRAPE_FAILURES)
+                    .all()
+                )
+                self._exhausted_urls = {row.url for row in rows}
+                self.logger.info(
+                    f"📦 Loaded {len(self._exhausted_urls)} URLs over the retry limit from DB"
+                )
         except Exception as e:
             self.logger.warning(f"⚠️ Failed to load existing posting IDs: {e}")
             self._existing_posting_ids = set()
+            self._exhausted_urls = set()
 
     def _filter_new_postings(
         self, job_posts: List[JobPostingData]
     ) -> List[JobPostingData]:
-        """DB에 이미 존재하는 posting_id를 제외하고 신규 공고만 반환"""
-        if not self._existing_posting_ids:
-            return job_posts
-
+        """DB에 이미 존재하거나 실패 횟수 제한에 걸린 공고를 제외하고 반환"""
         new_posts = [
             p for p in job_posts
             if p.posting_id not in self._existing_posting_ids
@@ -104,7 +117,15 @@ class PipelineManager:
                 f"🔍 DB 조기 필터링: {len(job_posts)}건 중 {filtered}건 기존, "
                 f"{len(new_posts)}건 신규"
             )
-        return new_posts
+
+        retryable = [p for p in new_posts if p.full_url not in self._exhausted_urls]
+        skipped = len(new_posts) - len(retryable)
+        self.metrics.skipped_count += skipped
+        if skipped > 0:
+            self.logger.warning(
+                f"⏭️ 실패 {MAX_SCRAPE_FAILURES}회 제한으로 {skipped}건 건너뜀"
+            )
+        return retryable
     
     async def run(self, save_callback: Optional[Callable] = None) -> PipelineMetrics:
         """🚀 교대 처리 파이프라인 실행"""
