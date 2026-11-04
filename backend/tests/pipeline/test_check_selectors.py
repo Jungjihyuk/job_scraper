@@ -13,9 +13,9 @@ from app.pipeline.diagnostics.check_selectors import (
 
 @pytest.mark.parametrize(
     "value",
-    ["No title", "No location", "Extraction failed", "", "   ", None, []],
+    ["", "   ", None, []],
 )
-def test_is_extracted_rejects_empty_and_placeholder(value):
+def test_is_extracted_rejects_empty(value):
     assert is_extracted(value) is False
 
 
@@ -26,7 +26,7 @@ def test_is_extracted_accepts_real_value(value):
 
 def test_missing_fields_lists_only_unread_fields():
     check = PostingCheck(
-        "u", {"title": "제목", "main_tasks": "Extraction failed"}
+        "u", {"title": "제목", "main_tasks": None}
     )
 
     assert missing_fields(check, REQUIRED_FIELDS) == [
@@ -40,7 +40,7 @@ def test_has_required_failure_when_one_posting_lacks_required_field():
         "a", {"title": "t", "main_tasks": "m", "requirements": "r"}
     )
     bad = PostingCheck(
-        "b", {"title": "No title", "main_tasks": "m", "requirements": "r"}
+        "b", {"title": None, "main_tasks": "m", "requirements": "r"}
     )
 
     assert has_required_failure([good]) is False

@@ -2,7 +2,8 @@ import asyncio
 import json
 import random
 import time
-from typing import List, Dict, Any
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 from playwright.async_api import async_playwright, Page
 
 from app.pipeline.stages.base import AsyncBatchStage
@@ -31,6 +32,60 @@ class WantedSelectors:
     EXPAND_BUTTON = "button:has(span:text('상세 정보 더 보기'))"
     LOCATION = "div.JobHeader_JobHeader__Tools__lyxqQ span.JobHeader_JobHeader__Tools__Company__Info__b9P4Y"
     EXPERIENCE = "div.JobHeader_JobHeader__Tools__lyxqQ span.JobHeader_JobHeader__Tools__Company__Info__b9P4Y"
+
+
+def _clean_text(text: Optional[str]) -> Optional[str]:
+    """공백뿐인 추출 결과를 None으로 바꾼다.
+
+    Args:
+        text: 요소에서 읽은 글자.
+
+    Returns:
+        내용이 있으면 원문 그대로, 없으면 None.
+    """
+    return text if text and text.strip() else None
+
+
+def missing_required_fields(job_description: Dict[str, Any]) -> List[str]:
+    """공고로 저장하기에 빠진 필수 칸을 찾는다.
+
+    제목은 반드시 있어야 하고, 본문은 주요업무와 자격요건 중 하나면 된다.
+    자격요건이 없는 공고가 영원히 실패하지 않게 하기 위해서다.
+
+    Args:
+        job_description: 상세 페이지에서 추출한 칸.
+
+    Returns:
+        빠진 칸 이름. 없으면 빈 목록.
+    """
+    missing = []
+    if not _clean_text(job_description.get("title")):
+        missing.append("title")
+    if not _clean_text(job_description.get("main_tasks")) and not _clean_text(
+        job_description.get("requirements")
+    ):
+        missing.append("main_tasks/requirements")
+    return missing
+
+
+def parse_posted_date(value: Any) -> Optional[datetime]:
+    """LD+JSON의 게시일을 시간대 없는 datetime으로 바꾼다.
+
+    Args:
+        value: `datePosted` 값.
+
+    Returns:
+        파싱한 시각. 시간대 표기는 버리고 적힌 시각을 그대로 쓴다.
+        값이 없거나 형식이 맞지 않으면 None.
+    """
+    if not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value.strip().replace("Z", "+00:00")).replace(
+            tzinfo=None
+        )
+    except ValueError:
+        return None
 
 
 class ContentScraperStage(AsyncBatchStage):
@@ -104,17 +159,27 @@ class ContentScraperStage(AsyncBatchStage):
 
             scraping_duration = time.time() - start_time
 
+            missing = missing_required_fields(job_description)
             job_details = JobDetails(
                 job_url=validated_url.job_url,
                 job_field=self.config.job,
                 job_description=job_description,
                 posted_date=posted_date,
-                success=True,
+                success=not missing,
+                error_message=(
+                    f"필수 칸 추출 실패: {', '.join(missing)}" if missing else None
+                ),
                 scraping_duration=scraping_duration,
-                experience=job_description.get("experience", ""),
-                location=job_description.get("location", ""),
-                location_detail=job_description.get("location_details", ""),
+                experience=job_description.get("experience"),
+                location=job_description.get("location"),
+                location_detail=job_description.get("location_details"),
             )
+
+            if missing:
+                self.logger.warning(
+                    f"⚠️ {job_details.error_message}: {validated_url.job_url.full_url}"
+                )
+                return job_details
 
             self.logger.info(
                 f"✅ Successfully scraped: {validated_url.job_url.position} at {validated_url.job_url.company}"
@@ -163,7 +228,7 @@ class ContentScraperStage(AsyncBatchStage):
                 except Exception:
                     pass
 
-    async def _scrape_job_details(self, page: Page) -> Dict[str, str]:
+    async def _scrape_job_details(self, page: Page) -> Dict[str, Any]:
         """📋 Wanted 사이트 상세 정보 스크래핑 - 메인 메소드"""
         try:
             # 페이지 로딩 대기 (더 긴 타임아웃)
@@ -224,52 +289,52 @@ class ContentScraperStage(AsyncBatchStage):
                         "⚠️ '상세 정보 더 보기' 버튼 클릭 최종 실패 - 계속 진행"
                     )
 
-    async def _extract_title(self, page: Page) -> Dict[str, str]:
+    async def _extract_title(self, page: Page) -> Dict[str, Optional[str]]:
         """📌 제목 추출"""
         try:
             await page.wait_for_selector(self.selectors.TITLE, timeout=10000)
             title_elem = await page.query_selector(self.selectors.TITLE)
-            title = await title_elem.text_content() if title_elem else "No title"
+            title = _clean_text(await title_elem.text_content()) if title_elem else None
             self.logger.debug(f"📌 title: {title}")
             return {"title": title}
         except Exception as e:
             self.logger.warning(f"⚠️ 제목 추출 실패: {e}")
-            return {"title": "No title"}
+            return {"title": None}
 
-    async def _extract_location(self, page: Page) -> Dict[str, str]:
+    async def _extract_location(self, page: Page) -> Dict[str, Optional[str]]:
         """📍 위치 추출"""
         try:
             await page.wait_for_selector(self.selectors.LOCATION, timeout=10000)
 
             location_elem = await page.query_selector_all(self.selectors.LOCATION)
             location = (
-                await location_elem[0].text_content()
+                _clean_text(await location_elem[0].text_content())
                 if location_elem
-                else "No location"
+                else None
             )
             self.logger.debug(f"📍 location: {location}")
             return {"location": location}
 
         except Exception as e:
             self.logger.warning(f"⚠️ 위치 추출 실패: {e}")
-            return {"location": "No location"}
+            return {"location": None}
 
-    async def _extract_experience(self, page: Page) -> Dict[str, str]:
+    async def _extract_experience(self, page: Page) -> Dict[str, Optional[str]]:
         """⭐️ 경력 추출"""
         try:
             await page.wait_for_selector(self.selectors.EXPERIENCE, timeout=10000)
             experience_elem = await page.query_selector_all(self.selectors.EXPERIENCE)
             experience = (
-                await experience_elem[1].text_content()
+                _clean_text(await experience_elem[1].text_content())
                 if experience_elem
-                else "No experience"
+                else None
             )
             self.logger.debug(f"⭐️ experience: {experience}")
             return {"experience": experience}
 
         except Exception as e:
             self.logger.warning(f"⚠️ 경력 추출 실패: {e}")
-            return {"experience": "No experience"}
+            return {"experience": None}
 
     # async def _extract_preferred(self, page: Page) -> Dict[str, str]:
     #     """👍 우대 사항 추출"""
@@ -297,21 +362,21 @@ class ContentScraperStage(AsyncBatchStage):
     #         self.logger.warning(f"⚠️ 혜택 및 복지 사항 추출 실패: {e}")
     #         return {"benefits": "No benefits"}
 
-    async def _extract_position_detail(self, page: Page) -> Dict[str, str]:
+    async def _extract_position_detail(self, page: Page) -> Dict[str, Optional[str]]:
         """🎯 포지션 상세 추출"""
         try:
             await page.wait_for_selector(self.selectors.POSITION_DETAIL, timeout=10000)
             detail_position = await page.query_selector(self.selectors.POSITION_DETAIL)
             position_text = (
-                await detail_position.text_content()
+                _clean_text(await detail_position.text_content())
                 if detail_position
-                else "No position detail"
+                else None
             )
             self.logger.debug(f"🎯 포지션 상세: {position_text}")
             return {"position_detail": position_text}
         except Exception as e:
             self.logger.warning(f"⚠️ 포지션 상세 추출 실패: {e}")
-            return {"position_detail": "No position detail"}
+            return {"position_detail": None}
 
     # async def _extract_tasks_qualification(self, page: Page) -> Dict[str, str]:
     #     """💼 주요 업무 추출"""
@@ -360,13 +425,7 @@ class ContentScraperStage(AsyncBatchStage):
 
         except Exception as e:
             self.logger.error(f"❌ 구조화된 추출 실패: {e}")
-            return {
-                "main_tasks": "Extraction failed",
-                "requirements": "Extraction failed",
-                "preferred": "Extraction failed",
-                "benefits": "Extraction failed",
-                "hiring_process": "Extraction failed",
-            }
+            return {}
 
     async def _extract_company_tags(self, page: Page) -> Dict[str, List[str]]:
         """🏷️ 회사 태그 추출"""
@@ -389,39 +448,39 @@ class ContentScraperStage(AsyncBatchStage):
 
         except Exception as e:
             self.logger.warning(f"⚠️ 회사 태그 추출 실패: {e}")
-            return {"회사 태그": []}
+            return {"tags": []}
 
-    async def _extract_deadline(self, page: Page) -> Dict[str, str]:
+    async def _extract_deadline(self, page: Page) -> Dict[str, Optional[str]]:
         """📅 마감일 추출"""
         try:
             await page.wait_for_selector(self.selectors.DEADLINE, timeout=10000)
             due_time_elem = await page.query_selector(self.selectors.DEADLINE)
             due_time = (
-                await due_time_elem.text_content() if due_time_elem else "No due time"
+                _clean_text(await due_time_elem.text_content()) if due_time_elem else None
             )
             self.logger.debug(f"📅 마감일: {due_time}")
             return {"deadline": due_time}
         except Exception as e:
             self.logger.warning(f"⚠️ 마감일 추출 실패: {e}")
-            return {"deadline": "No due time"}
+            return {"deadline": None}
 
-    async def _extract_work_place(self, page: Page) -> Dict[str, str]:
+    async def _extract_work_place(self, page: Page) -> Dict[str, Optional[str]]:
         """🌍 근무 지역 추출"""
         try:
             await page.wait_for_selector(self.selectors.WORK_PLACE, timeout=10000)
             work_place_elem = await page.query_selector(self.selectors.WORK_PLACE)
             work_place = (
-                await work_place_elem.text_content()
+                _clean_text(await work_place_elem.text_content())
                 if work_place_elem
-                else "No work place"
+                else None
             )
             self.logger.debug(f"🌍 근무 지역: {work_place}")
             return {"location_details": work_place}
         except Exception as e:
             self.logger.warning(f"⚠️ 근무 지역 추출 실패: {e}")
-            return {"location_details": "No work place"}
+            return {"location_details": None}
 
-    async def _extract_posted_date(self, page: Page) -> str:
+    async def _extract_posted_date(self, page: Page) -> Optional[datetime]:
         """📆 게시일 추출 (LD+JSON에서)"""
         try:
             ld_json = await page.evaluate(
@@ -437,15 +496,15 @@ class ContentScraperStage(AsyncBatchStage):
 
             if ld_json:
                 ld_data = json.loads(ld_json)
-                posted_date = ld_data.get("datePosted", "Unknown")
+                posted_date = parse_posted_date(ld_data.get("datePosted"))
                 self.logger.debug(f"📆 게시일: {posted_date}")
                 return posted_date
 
-            return "Unknown"
+            return None
 
         except Exception as e:
             self.logger.warning(f"⚠️ 게시일 추출 실패: {e}")
-            return "Unknown"
+            return None
 
     async def _filter_resource(self, route):
         """🚫 리소스 필터링 - 이미지, 폰트 등 차단 (일부 허용)"""
