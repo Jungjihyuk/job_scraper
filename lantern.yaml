@@ -31,6 +31,11 @@ design:
 git:
   hooks: warn              # warn(경고만) | block(막기) — 커밋 메시지 · 스키마 기록 · 문서 양식 검사에만 적용
   base: dev                 # 작업 브랜치를 머지할 기준 브랜치 (main | dev …)
+  # 스키마 파일. 예전 SQL(job_scraper_db.sql · dump.sql)은 실제 스키마와 달라 빼고, 실제 DB 스냅샷을 쓴다
+  schema_paths:
+    - "**/alembic/versions/**"
+    - "backend/app/db/schema.sql"
+    - "**/*.dbml"
 
 idea:
   capture: manual           # manual(직접 부를 때만) | ask(알아채고 묻기) | auto(알아서 기록)
