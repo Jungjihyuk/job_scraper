@@ -36,6 +36,7 @@ class URLCollectorStage(BaseStage):
         self.page = None  # 페이지 세션 유지
         self.context = None  # 컨텍스트 세션 유지
         self.scraper = None  # 스크래퍼
+        self.counted_failed_cards = 0  # 이미 메트릭에 더한 실패 카드 수
 
     async def initialize_browser(self, config: PipelineConfig):
         """브라우저 세션 초기화"""
@@ -140,4 +141,20 @@ class URLCollectorStage(BaseStage):
                     f"🆕 New job posting: {job_posting.position} at {job_posting.company}"
                 )
 
+        self._count_new_failed_cards()
         return new_job_posting_data
+
+    def _count_new_failed_cards(self) -> None:
+        """이번 추출에서 새로 실패한 카드만 메트릭에 더한다.
+
+        스크롤마다 페이지의 모든 카드를 다시 읽으므로, 그대로 더하면 같은 카드가
+        사이클마다 다시 세어진다.
+        """
+        failed_now = self.scraper.last_failed_cards
+        new_failures = max(0, failed_now - self.counted_failed_cards)
+        if new_failures:
+            self.update_metrics(failed=new_failures)
+            self.logger.warning(
+                f"⚠️ 읽지 못한 카드 {new_failures}건 (누적 {failed_now}건)"
+            )
+        self.counted_failed_cards = max(self.counted_failed_cards, failed_now)

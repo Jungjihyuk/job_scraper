@@ -58,6 +58,7 @@ class JobNormalizerStage(BaseStage):
             except Exception as e:
                 posting_id = getattr(job_details.job_url, 'posting_id', 'Unknown')
                 self.logger.error(f"❌ Failed to normalize item {posting_id}: {e}")
+                job_details.normalization_failed = True
                 normalized_data.append(job_details)  # 실패한 경우 원본 데이터 유지
                 self.update_metrics(failed=1)
         

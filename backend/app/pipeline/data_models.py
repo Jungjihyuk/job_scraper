@@ -2,6 +2,10 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
+# CLI가 실행 결과 줄 앞에 붙이고 API가 stdout에서 찾는 표시
+PIPELINE_RESULT_PREFIX = "PIPELINE_RESULT "
+
+
 @dataclass
 class JobPostingData:
     """URLCollectorStage의 리턴값 
@@ -37,8 +41,8 @@ class JobDetails:
     📄 스크래핑된 Job 상세 정보
     """
     job_url: JobPostingData    
-    job_description: Dict[str, str]  # 항목: 내용 ex) '주요업무': api 개발 
-    posted_date: Optional[str] = None 
+    job_description: Dict[str, Any]  # 항목: 내용 ex) 'main_tasks': api 개발. 못 읽은 칸은 None
+    posted_date: Optional[datetime] = None
     scraped_at: datetime = field(default_factory=datetime.now)
     scraping_duration: Optional[float] = None
     success: bool = True
@@ -47,6 +51,15 @@ class JobDetails:
     location_detail: Optional[str] = None
     experience: Optional[str] = None
     job_field: Optional[str] = None
+    normalization_failed: bool = False
+
+
+@dataclass
+class JobSaveResult:
+    """DatabaseSaverStage가 공고 상세를 저장한 결과"""
+    saved: List[JobDetails] = field(default_factory=list)
+    failed: List[JobDetails] = field(default_factory=list)  # error_message에 원인
+    duplicates: int = 0  # 이미 있어 건너뛴 공고 수
 
 
 @dataclass
@@ -74,7 +87,7 @@ class StageResult:
     stage_name: str
     success: bool
     data: Any
-    execution_time: int
+    execution_time: float
     urls_processed: int
     urls_failed: int = 0
     error_message: Optional[str] = None
@@ -89,6 +102,12 @@ class PipelineMetrics:
     invalid_urls: int = 0
     successful_scrapes: int = 0
     failed_scrapes: int = 0
+    saved_count: int = 0  # 실제 저장한 공고 수
+    failed_count: int = 0  # 상세 추출 실패 + 저장 실패
+    skipped_count: int = 0  # 3회 제한으로 건너뛴 공고 수
+    failed_cards: int = 0  # 목록에서 읽지 못한 카드 수
+    file_save_failures: int = 0
+    batch_status: Optional[str] = None
     total_execution_time: float = 0.0
     stage_results: List[StageResult] = field(default_factory=list)
     
