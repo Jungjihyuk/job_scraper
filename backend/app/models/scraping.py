@@ -15,8 +15,20 @@ class ScrapingBatch(Base):
     id = Column(Integer, primary_key=True)
     batch_name = Column(String(255), nullable=False)
     scraper_type = Column(String(50), nullable=False)  # wanted/saramin/jobkorea
-    status = Column(String(20), nullable=False)  # pending/running/completed/failed
+    status = Column(
+        String(20), nullable=False
+    )  # pending/running/completed/partial/failed
     total_urls = Column(Integer)
+    collected_count = Column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    saved_count = Column(Integer, nullable=False, default=0, server_default="0")
+    failed_count = Column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    skipped_count = Column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     started_at = Column(TIMESTAMP)
     completed_at = Column(TIMESTAMP)
     created_at = Column(TIMESTAMP, default=func.current_timestamp())

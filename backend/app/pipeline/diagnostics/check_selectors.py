@@ -55,17 +55,6 @@ OPTIONAL_FIELDS = (
     "tags",
 )
 
-# 추출 코드가 실패할 때 채우는 대체 문자열. W-002가 없애면 이 목록도 지운다.
-PLACEHOLDER_VALUES = {
-    "No title",
-    "No location",
-    "No experience",
-    "No position detail",
-    "No due time",
-    "No work place",
-    "Extraction failed",
-}
-
 
 @dataclass
 class SelectorResult:
@@ -93,10 +82,10 @@ def is_extracted(value: object) -> bool:
         value: 추출 코드가 돌려준 칸의 값.
 
     Returns:
-        비어 있지 않고 대체 문자열도 아니면 True.
+        비어 있지 않으면 True.
     """
     if isinstance(value, str):
-        return bool(value.strip()) and value.strip() not in PLACEHOLDER_VALUES
+        return bool(value.strip())
     return bool(value)
 
 

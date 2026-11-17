@@ -51,7 +51,7 @@ def make_job_details(
     return JobDetails(
         job_url=make_job_posting(posting_id=posting_id),
         job_description={"주요업무": "API 개발", "자격요건": "Python 3년"},
-        posted_date="2026-01-01",
+        posted_date=datetime(2026, 1, 1),
         success=success,
     )
 

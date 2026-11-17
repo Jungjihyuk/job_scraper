@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useWebSocket } from '../../../shared/api'
 import { fetchScrapingStatus } from '../api/scrapingApi'
-import type { WsEvent } from '../../../shared/api'
+import type { ScrapingResult, WsEvent } from '../../../shared/api'
 
 type UseScrapingSocketResult = {
   messages: WsEvent[]
   isConnected: boolean
   isScrapingRunning: boolean
+  lastResult: ScrapingResult | null
   clearMessages: () => void
 }
 
@@ -17,6 +18,7 @@ export function useScrapingSocket(): UseScrapingSocketResult {
   const [isScrapingRunning, setIsScrapingRunning] = useState(false)
   const initializedRef = useRef(false)
   const [localMessages, setLocalMessages] = useState<WsEvent[]>([])
+  const [lastResult, setLastResult] = useState<ScrapingResult | null>(null)
 
   useEffect(() => {
     if (!initializedRef.current) {
@@ -40,7 +42,11 @@ export function useScrapingSocket(): UseScrapingSocketResult {
 
     if (latest.type === 'status') {
       setIsScrapingRunning(true)
-    } else if (latest.type === 'complete' || latest.type === 'error' || latest.type === 'stopped') {
+      setLastResult(null)
+    } else if (latest.type === 'complete' || latest.type === 'error') {
+      setIsScrapingRunning(false)
+      setLastResult(latest.result ?? null)
+    } else if (latest.type === 'stopped') {
       setIsScrapingRunning(false)
     }
 
@@ -51,5 +57,5 @@ export function useScrapingSocket(): UseScrapingSocketResult {
     setLocalMessages([])
   }, [])
 
-  return { messages: localMessages, isConnected, isScrapingRunning, clearMessages }
+  return { messages: localMessages, isConnected, isScrapingRunning, lastResult, clearMessages }
 }

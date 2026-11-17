@@ -19,7 +19,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+from sqlalchemy.sql import false, func
 
 from app.models.base import Base
 
@@ -163,6 +163,9 @@ class JobPosting(Base):
     core_technologies = Column(JSONB)  # 핵심 기술 태그
     taxonomy_version = Column(String(20))  # 분류 기준 버전 (FR-057)
     posted_date = Column(TIMESTAMP)
+    normalization_failed = Column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
 
     # Relationships
     company = relationship("Company", back_populates="job_postings")
