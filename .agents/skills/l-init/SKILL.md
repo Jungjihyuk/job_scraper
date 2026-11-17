@@ -1,25 +1,25 @@
 ---
 name: l-init
-description: LanternSpec 프로젝트 준비 — 질문 7개로 프로젝트 성격(신규/기존 · 인원 · 화면 유형 · 서버 · 지식 저장소 · 디자인 도구 · 프로젝트 종류)을 정하고 lantern.yaml · docs/ 폴더 · 템플릿 · MOC · 프로젝트 정의서 초안 · 개발 원칙 · git hook을 만든다. 프로젝트당 한 번, 성격이 바뀌면 다시 (1인→2인, 웹 추가 등). Use when setting up LanternSpec docs in a project or re-running after the project profile changed.
+description: LanternSpec 프로젝트 준비 — 앞 답에 따라 필요한 질문만 골라 프로젝트 성격(신규/기존 · 인원 · 프로젝트 종류 · 화면 · 서버 · 지식 저장소 · 디자인 도구)을 정하고 lantern.yaml · docs/ 폴더 · 템플릿 · MOC · 프로젝트 정의서 초안 · 개발 원칙 · git hook을 만든다. 프로젝트당 한 번, 성격이 바뀌면 다시 (1인→2인, 웹 추가 등). Use when setting up LanternSpec docs in a project or re-running after the project profile changed.
 ---
 <!-- lanternspec가 생성한 파일 — 원본: lanternspec/resources/skills. `lantern upgrade`가 다시 만든다 (직접 고치면 upgrade가 건너뜀) -->
 
 # /l-init — 프로젝트에 맞는 문서 구조 만들기
 
-**목적:** 질문 7개로 어떤 문서를 켜고 끌지, 어떤 개발 원칙을 따를지 정하고, 그 구조를 만든다. 형식(파일 · 폴더 · 번호)은 전부 `lantern` 명령이 만들고, 너는 묻고 · 판단하고 · 빈칸을 채운다.
+**목적:** 앞 답에 따라 필요한 질문만 골라 어떤 문서를 켜고 끌지, 어떤 개발 원칙을 따를지 정하고, 그 구조를 만든다. 형식(파일 · 폴더 · 번호)은 전부 `lantern` 명령이 만들고, 너는 묻고 · 판단하고 · 빈칸을 채운다.
 
 먼저 `lantern --version`으로 CLI가 있는지 확인한다. 없으면 설치 안내(`uv tool install lanternspec`)만 하고 멈춘다.
 
 ## 0. 처음인가, 다시 실행인가
 - `lantern.yaml`이 **없으면** → 아래 1단계부터.
-- **있으면** → [다시 실행할 때](#다시-실행할-때)로 간다. 질문 7개를 다시 묻지 않는다.
+- **있으면** → [다시 실행할 때](#다시-실행할-때)로 간다. 질문을 처음부터 다시 묻지 않는다.
 
-## 1. 질문 7개 — 하나씩 묻고, 답은 모았다가 한 번에 쓴다
+## 1. 질문 — 하나씩 묻고, 답은 모았다가 한 번에 쓴다
 **묻는 법**
 - 먼저 알 수 있는 것은 알아본 뒤 추천값으로 쓴다: 코드가 있나(`git ls-files`) · 언어(`lantern principles detect`) · 브랜치(`git branch`).
 - **질문 하나에는 결정 하나만** 담는다. "있으면 A도, B도 알려 주세요"처럼 여러 답을 한 질문에 몰지 않는다 — 필요한 것은 따로 묻는다.
 - 사람은 고르기만 하면 되게 선택지로 내고, 추천값에 표시한다.
-- 경로 · 이름처럼 직접 써야 하는 답은 **찾을 수 있는 후보를 먼저 찾아 선택지로** 낸다. 후보가 있으면 질문 문장에 "맞는 게 없으면 맨 아래 칸에 직접 써 주세요"를 덧붙이고, **후보가 하나도 없으면** 선택지 질문 대신 평범한 메시지로 묻는다.
+- 경로 · 이름처럼 직접 써야 하는 답은 **찾을 수 있는 후보를 먼저 찾아 선택지로** 낸다. 후보가 2개 이상이면 질문 문장에 "맞는 게 없으면 맨 아래 칸에 직접 써 주세요"를 덧붙인다. **후보가 하나면** 선택지 질문 대신 평범한 메시지로 추천값을 적어 묻고 ("X로 할까요? 다른 것을 쓰려면 적어 주세요"), **하나도 없으면** 평범한 메시지로 묻는다.
 - 후보를 만들 수 없는 자유 답(한 문장 소개 · 팀원 이름)은 선택지 질문 대신 평범한 메시지로 묻는다 (AGENTS.md "묻는 법").
 - 답을 받을 때마다 파일을 만들거나 명령을 실행하지 않는다. **모든 답을 모은 뒤** 2단계에서 한 번에 쓴다.
 - 한 메시지에 **질문 하나만** 낸다. 답을 받으면 바로 다음 질문으로 넘어간다 (중간 요약 없이).
@@ -27,29 +27,83 @@ description: LanternSpec 프로젝트 준비 — 질문 7개로 프로젝트 성
 **질문**
 1. 🌱 새 프로젝트(greenfield)인가, 🏠 기존 코드가 있는 프로젝트(brownfield)인가? — 코드가 이미 있으면 brownfield를 추천
 2. 몇 명이 하나? 1인(solo) / 2인 이상(team)
-3. 무엇을 만드나? (화면 쪽, 여러 개 가능) 웹 · 데스크톱 · 모바일 · 없음
-4. 백엔드(서버 쪽 코드와 데이터 저장)는 어떻게 하나? — 서버를 *어디에* 띄우는지가 아니라 서버 코드를 *직접 쓰는지*를 묻는다
-   - 없음(none): 서버 없이 앱 · 웹 안에서만 동작. 데이터는 기기나 브라우저에 저장
-   - 외부 서비스(external): Supabase · Firebase처럼 이미 만들어진 백엔드를 가져다 씀 — 서버 코드를 직접 쓰지 않음
-   - 직접 만듦(custom): 서버 코드를 직접 작성 — AWS · GCP · Vercel · 사내 서버 등 어디에 띄우든 (로컬에서만 돌려도 여기)
+3. 어떤 프로젝트를 만드나요? 답에 따라 이어서 묻는다. 선택지는 아래 문구 그대로 내고, 저장값은 화면에 쓰지 않는다
+   - 서비스 · 앱 — 사용자가 화면이나 API로 쓰는 것 (`--kind service`). 이어서 **"어디에서 쓰나요? (여러 개 선택 가능)"** 웹사이트(`web`) · PC 프로그램(`desktop`) · 모바일 앱(`mobile`) · 화면 없음, API 서버만(`--clients none`)
+   - 도구 · 라이브러리 — CLI, 플러그인, 다른 코드에 넣어 쓰는 것 (`--clients none`). 이어서 **"어떻게 쓰나요?"** CLI 도구(`--kind cli`) · 라이브러리 · 플러그인(`--kind library`)
+   - 데이터 · ML — 데이터 처리, 모델 학습 (`--kind data --clients none`)
+   - 스크립트 · 실험 — 한 번 돌리거나 시험해 보는 코드 (`--kind script --clients none`)
+4. 서버가 해야 할 일이 있나요? (회원 관리, 데이터 저장, 외부 API 호출 등) — 3번이 도구 · 라이브러리나 스크립트 · 실험이면 묻지 않고 `--server none`으로 정한다. 서버를 *어디에* 띄우는지가 아니라 서버 코드를 *직접 쓰는지*로 나눈다. 선택지는 아래 문구 그대로 내고, 저장값은 화면에 쓰지 않는다
+   - 직접 개발 — FastAPI, Spring, Express 등 (저장값 `custom`: 서버 코드를 직접 작성. 어디에 띄우든, 로컬에서만 돌려도 여기)
+   - 기존 서비스 활용 — Supabase, Firebase 등 (저장값 `external`: 서버 코드를 직접 쓰지 않음)
+   - 필요 없음 — 브라우저나 기기 안에서만 동작 (저장값 `none`)
 5. 공부 노트를 모아 둔 지식 저장소가 있나? 없음 / Obsidian 볼트 / 일반 Markdown 폴더 — **종류만** 묻는다 (경로 · 쓰기 방식은 아래에서 따로)
-6. 디자인 도구는? Claude Design / Figma / Canva / 없음 — Figma · Canva는 그 도구의 MCP 서버가 이 AI 도구에 연결돼 있어야 한다 (없으면 연결 방법을 안내하고, 연결 전까지는 내보낸 파일을 받는다)
-7. 어떤 종류의 프로젝트인가? 스크립트 · 실험(script) / CLI 도구(cli) / 라이브러리 · 플러그인(library) / 서비스 — 웹 · 앱(service) / 데이터 · ML(data). 그리고 **바깥 도구 · 서비스에 붙나?** (AI 도구 · 결제 · 외부 API · 플러그인을 받는 구조 등) — 설계 원칙을 이 답으로 고른다
-   - 언어는 묻기 전에 먼저 `lantern principles detect`로 알아본다. 알아본 것이 없으면(새 프로젝트) "무엇으로 만드나요? Python · TypeScript · Swift · Rust · Go"를 따로 묻는다
+6. 디자인 도구는? Claude Design / Figma / Canva / 없음 — Claude Design은 Claude 안의 Design 캔버스다. Claude Code에서는 AI가 와이어프레임을 직접 그리고, 다른 AI 도구에서는 Claude에서 만든 화면을 HTML로 받는다. Figma · Canva는 그 도구의 MCP 서버가 이 AI 도구에 연결돼 있어야 한다 (없으면 연결 방법을 안내하고, 연결 전까지는 내보낸 파일을 받는다)
+7. **바깥 도구 · 서비스에 붙나?** (AI 도구 · 결제 · 외부 API · 플러그인을 받는 구조 등) — 3번의 프로젝트 종류와 이 답으로 설계 원칙을 고른다
+   - 언어는 묻기 전에 먼저 `lantern principles detect`로 알아본다. 알아본 것이 없으면(새 프로젝트) 3번의 답에 따라 정한다
+     - 서비스 · 앱: **기술 선택**을 따른다 (아래)
+     - 그 밖: "무엇으로 만드나요? Python · TypeScript · Swift · Rust · Go"를 묻는다
    - **규모는 묻지 않는다** — 코드 줄 수는 재고, 사람 수는 2번 답에서 나온다
 
+**기술 선택** (새 프로젝트의 서비스 · 앱만) — 1~7번 답을 받은 뒤 차례로 묻는다
+```bash
+lantern template show "기술 선택 기준.md"
+```
+- 이 문서의 "의사결정 트리"를 그대로 따른다. 트리에 적힌 질문만 하고, 추천을 네 판단으로 바꾸지 않는다.
+- 선택지 문구는 트리의 말을 쓰고, 기술을 제안할 때는 "대표 기술 비교"의 장점 · 단점을 한 줄로 함께 알린다. 대안이 있으면 같이 보여 준다.
+- 고른 기술의 언어를 `--languages`에 넣는다. `lantern profile write`가 받지 않는 언어(Java 등)는 빼고, "이 언어의 코드 규칙은 아직 LanternSpec에 없어요"라고 알린다.
+- 배포 인프라와 디자인 패턴은 여기서 묻지 않는다. 개발 환경(Docker)은 트리에 있는 대로 묻는다.
+
 **이어서 묻는다** (앞 답에 따라 필요한 것만)
-- 프로젝트 이름 — 폴더 이름을 추천값으로
-- "문서도 GitHub에 함께 올릴까요?" — 예(shared, 기본) / 아니요(local: 문서는 같은 저장소의 `docs-local` 브랜치에만, 원격에 안 올림. 혼자 보는 메모 · 공개 저장소에 어울림)
-- 작업 브랜치를 머지할 기준 브랜치 — `git branch`로 보이는 main · dev를 선택지로
+- 프로젝트 이름 — 후보가 폴더 이름 하나뿐이면 평범한 메시지로: "프로젝트 이름을 <폴더 이름>으로 할까요? 다른 이름을 쓰려면 적어 주세요"
+- "문서도 GitHub에 함께 올릴까요?" — 선택지는 아래 문구 그대로 내고, 저장값은 화면에 쓰지 않는다
+  - 예 — 코드와 함께 올려요 (기본, 저장값 `shared`)
+  - 아니요 — 이 컴퓨터에만 둬요 (저장값 `local`: 문서는 같은 저장소의 `docs-local` 브랜치에만 둔다. 혼자 보는 메모 · 공개 저장소에 어울림)
+- "얼마나 오래 만들 프로젝트인가요?" — 선택지는 아래 문구 그대로 내고, 저장값은 화면에 쓰지 않는다
+  - 짧게 시험해 볼 프로젝트 (기본, 저장값 `short`)
+  - 오래 운영할 프로젝트 — README · CHANGELOG를 갖추고 폴더 구조를 함께 정해요 (저장값 `long`)
+- "저장소를 누구나 볼 수 있게 공개할 건가요? (문서를 올릴지와는 별개예요)" — 공개 / 비공개(기본). 공개면 이어서 라이선스를 정한다: `lantern template show "저장소 파일 규칙.md"`의 "LICENSE" 절에 있는 질문을 차례로 묻고, 답에 맞는 라이선스를 이유와 함께 추천한다. 비공개면 묻지 않는다.
+- 브랜치 방식 — 아래 "브랜치 방식 고르기"
 - 코드 주석(docstring · 주석)은 어떤 언어로 쓸까요? 한국어 / 영어 — 문서는 한국어로 만들고, 코드 안의 설명만 따로 정한다. 혼자 · 한국어 팀이면 한국어, 공개 오픈소스로 낼 거면 영어를 추천
 - (2번이 team이면) 팀원 이름 — 후보를 만들 수 없으니 평범한 메시지로: "함께하는 사람 이름을 쉼표로 적어 주세요"
 - (4번이 external이면) "API 명세 문서도 만들까요?" — 예면 `--extra api`
 
 **지식 저장소를 골랐으면** (5번이 없음이 아닐 때만, 하나씩)
-- **어디에 있나요?** — 먼저 후보를 찾는다: Obsidian이면 `.obsidian` 폴더가 있는 곳(`find ~ -maxdepth 4 -name .obsidian -type d`), Markdown 폴더면 문서 폴더 근처. 찾은 경로를 선택지로 내고(최대 3개), 못 찾으면 평범한 메시지로 "노트 폴더의 경로를 알려 주세요"라고 묻는다.
+- **어디에 있나요?** — 먼저 후보를 찾는다: Obsidian이면 `.obsidian` 폴더가 있는 곳(`find ~ -maxdepth 4 -name .obsidian -type d`), Markdown 폴더면 문서 폴더 근처. 찾은 경로가 2개 이상이면 선택지로 내고(최대 3개), 하나면 평범한 메시지로 "이 경로가 맞나요?"라고 묻고, 못 찾으면 평범한 메시지로 "노트 폴더의 경로를 알려 주세요"라고 묻는다.
 - **새 노트는 어떻게 만들까요?** — 승인하면 저장소에 바로 쓰기(direct, 추천) / 저장소는 건드리지 않고 초안 파일만 만들기(propose_only)
 - **(저장소에 주제별로 나눈 폴더가 보일 때만) 그 분류도 함께 쓸까요?** (선택) — 먼저 저장소 맨 위 폴더를 훑어, 하위 폴더가 주제처럼 나뉜 폴더(예: `2. Study`)가 없으면 **이 질문은 건너뛴다**. 있으면 질문 문장에 뜻을 먼저 적는다: "모르는 기술은 부채 카드로 남고, 카드마다 주제가 하나 붙어요 (지금은 backend · frontend · data · ai · infra · 기타). 저장소에 주제별로 나눠 둔 폴더가 있는 것 같은데, 그 이름도 주제로 함께 쓸까요? 프로젝트 구조와는 상관없어요." 선택지는 찾은 폴더들과 "기본 주제만 쓰기"(추천).
+- **이 저장소에 AI가 열면 안 되는 폴더가 있나요?** — 선택지는 아래 문구 그대로 낸다. 2 · 3을 고르면 저장소의 맨 위 폴더 목록(숨김 폴더는 빼고)을 보여 주고 여러 개를 고르게 한다. 폴더가 선택지에 다 들어가지 않으면 평범한 메시지로 목록을 보여 주고 이름을 적게 한다.
+  - 없다. 전부 열어 둔다
+  - 있다. 닫을 폴더를 고른다 (`knowledge.deny`)
+  - 몇 개만 연다. 열 폴더를 고른다 (`knowledge.allow`)
+- **(닫는 폴더가 있고 macOS · Linux일 때만) 닫은 폴더(<폴더 이름>)를 AI가 직접 파일을 열어서 읽는 것도 막을까요?** — 질문 문장에 지금 상태를 먼저 적는다: "지금 설정으로는 LanternSpec이 노트를 찾아볼 때만 그 폴더를 건너뛰어요. AI가 파일을 직접 열면 읽을 수 있어요." 선택지는 아래 문구 그대로 내고, `claude` 자리에는 지금 쓰는 AI 도구의 명령을 넣는다. macOS · Linux가 아니면 묻지 않고 "AI가 파일을 직접 여는 것을 막는 기능은 macOS와 Linux에서만 돼요"라고 한 줄로 알린다. Linux에서 `bwrap`이 없으면(`command -v bwrap`) "막는다"를 고를 때 bubblewrap 패키지를 설치하라고(예: `sudo apt install bubblewrap`) 함께 알린다.
+  - 막는다 — AI 도구를 켤 때 `claude` 대신 `lantern guard -- claude`라고 입력해요. 그렇게 켠 동안에만 닫은 폴더가 막혀요. `claude`로 켜면 평소처럼 켜지지만 막히지 않아요.
+  - 막지 않는다 — LanternSpec이 노트를 찾아볼 때만 닫은 폴더를 건너뛰어요. AI가 그 폴더의 파일을 직접 열면 읽을 수 있어요.
+  - "막는다"를 고르면 마지막 안내에 넣는다: "앞으로 `lantern guard -- claude`로 켜세요." macOS면 이어서 도구에 맞는 한 줄을 붙인다 (Linux에서는 붙이지 않는다). Claude Code · Antigravity: "<도구>의 샌드박스 설정을 켜 두었다면 꺼야 해요. 둘을 함께 쓸 수 없어요." Codex: "Codex의 자체 샌드박스는 lantern이 꺼서 켜요. 그동안은 운영체제의 샌드박스가 막아요."
+
+**브랜치 방식 고르기** — 추천과 낼 선택지는 **명령이 정한다** (1 · 2번 답을 넣는다):
+```bash
+lantern work flow --team solo|team --origin greenfield|brownfield
+```
+나온 `선택지`만 보여 주고 `추천`에 표시한다. 네 판단으로 바꾸지 않는다. 사람은 추천이 아닌 것도 고를 수 있다. `선택지`가 A 하나면 묻지 않고 A로 두고, GitHub를 연결한 뒤 `/l-init`을 다시 실행하면 바꿀 수 있다고 한 줄로 알린다. 아래 `기본 브랜치`는 명령이 알려 준 브랜치다.
+질문: "작업이 끝난 코드를 어떻게 합칠까요? 나중에 바꿀 수 있어요." 선택지는 쉬운 말로, B · C를 낼 때는 "PR은 코드를 합치기 전에 GitHub에서 변경 내용을 확인하는 요청이에요"를 덧붙인다:
+- **A. 단순하게** — 작업이 끝나면 기본 브랜치에 바로 합쳐요. 처음이거나 혼자 빠르게 만들 때 좋아요.
+- **B. 개발과 배포를 나누기** — 평소에는 dev에 합치고, 배포할 때 PR로 기본 브랜치에 올려요. 기본 브랜치에 합치면 바로 배포되는 서비스에 좋아요.
+- **C. 작업마다 PR 만들기** — 작업마다 PR로 확인받고 합쳐요. 코드 리뷰를 받는다면 이 방식이 좋아요.
+- **D. 지금 쓰는 방식 그대로** — 브랜치를 바꾸지 않고, 어디로 합치는지만 기록해요. (지금 있는 브랜치를 함께 보여 준다)
+
+고른 뒤에 필요할 때만 더 묻는다:
+- **B:** `dev`가 없으면 "`dev` 브랜치를 만들까요?" (아니면 다시 고르게 한다)
+- **C:** `main` · `dev`가 모두 있으면 "어디로 합칠까요?"
+- **D:** "작업이 끝나면 어디로 합치나요?"(있는 브랜치를 선택지로) · "합칠 때 PR이 필요한가요?" 그리고 알린다: "LanternSpec은 작업을 합치는 곳까지만 맡아요. 배포 절차는 지금처럼 진행하면 돼요."
+- **B · C · D:** "작업 브랜치 이름에 정해진 규칙이 있나요?" — 없어요(추천: `work/W-012`처럼 자동으로 만들어요) / 있어요. 기존 브랜치에서 패턴이 보이면 후보로 낸다 (예: `feature/JS-15-normalization` → `feature/{ticket}-{slug}`). `{id}`는 작업 ID로 자동으로 채워지고, 다른 칸은 작업마다 정한다. `{id}`가 없으면 다른 브랜치에서 같은 작업 번호를 받을 수 있으니 넣기를 권한다.
+
+프로필 값 (`--deploy`는 B만, `--branch`는 규칙이 있을 때만):
+| 고른 것 | `--base` | `--pr` | `--deploy` |
+|---|---|---|---|
+| A | 기본 브랜치 | `none` | |
+| B | `dev` | `deploy` | 기본 브랜치 |
+| C | 고른 브랜치 (없으면 기본 브랜치) | `work` | |
+| D | 답한 브랜치 | 답에 따라 `work` · `none` | |
 
 답이 애매하면 추측하지 말고 다시 묻는다. 다 모았으면 답을 한 번에 요약해 보여 주고 2단계로 간다.
 
@@ -58,8 +112,9 @@ description: LanternSpec 프로젝트 준비 — 질문 7개로 프로젝트 성
 lantern profile write --name "<이름>" --origin greenfield|brownfield --team solo|team [--members "지혁,민수"] \
   --clients web,mobile --server none|external|custom [--extra api] \
   [--knowledge "<지식 저장소 경로>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
-  --design claude-design|figma|canva|none --remote shared|local --base main \
-  --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --comment-language ko|en
+  --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
+  --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --comment-language ko|en --lifespan short|long
+lantern profile set "knowledge.deny=[4. Work]"   # 닫을 폴더를 골랐을 때만 (열 폴더를 골랐으면 knowledge.allow=[…])
 lantern principles detect --write   # 코드 규모 · 언어 · 확인 명령(build.format · lint · typecheck)을 기록
 lantern principles show             # 고른 설계 원칙 · 코드 컨벤션
 lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아무것도 안 만듦)
@@ -84,8 +139,17 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 ## 3. 구조 만들기
 - `local`을 골랐으면 **먼저** `lantern docs-mode local` (빈 문서 브랜치 · `.gitignore` · `.ignore` · push 막는 hook을 한 번에)
   실행 전에 한 줄로 알린다: "문서를 원격에 안 올리는 설정으로 바꾸면서, main에 설정 파일 3개(`.gitignore` · `.ignore` · `lantern.yaml`)를 커밋해요."
-- 🏠 brownfield이고 `docs/`가 이미 있으면 **먼저** `lantern legacy adopt` (기존 문서를 `docs/5. 기존 문서/`로 `git mv` — 기록이 이어진다)
+- 🏠 brownfield이고 `docs/`가 이미 있으면 **먼저** 기존 문서를 `docs/5. 기존 문서/`로 옮긴다. 미리보기 → 사람 확인 → 옮기기 순서를 지킨다:
+  1. `lantern legacy adopt` — 항목마다 옮김 · 남김과 이유만 보여 준다. 아무것도 바꾸지 않는다.
+  2. 목록을 사람에게 그대로 보여 주고 확인받는다. "옮김"으로 나왔지만 그 자리에 있어야 하는 것(배포 · 스크립트가 경로를 쓰는 폴더 등)은 `lantern profile set 'docs.keep=[updates/]'`처럼 적고 다시 미리본다.
+  3. `lantern legacy adopt --apply` — `git mv`로 옮기고(기록이 이어진다) 커밋 하나로 남긴다. 문서에 커밋하지 않은 변경이 있어 멈추면, 먼저 커밋할지 사람에게 묻는다.
+  4. "문서 밖 N곳이 옮겨질 경로를 가리킵니다" 목록이 나오면 사람에게 보여 주고, 고칠지 묻는다.
+- B를 고르고 `dev`를 만들기로 했으면 `git branch dev` (커밋이 아직 없으면 첫 커밋 뒤에). GitHub에 올리는 것은 사람에게 다시 묻는다. 그 밖의 브랜치는 만들거나 바꾸지 않는다.
 - 그다음 `lantern scaffold init`
+- 끝으로 `lantern upgrade` — 스킬은 답을 받기 전에 설치됐으므로, 고른 설정(브랜치 방식 등)이 스킬에 들어가도록 다시 만든다.
+- 기술 선택을 했으면 고른 기술을 `시스템 구조.md`의 부품 칸에 적고, "되돌리기 어려운 선택이니 `/l-adr`로 이유를 남길까요?"라고 묻는다.
+- 오래 운영할 프로젝트(`long`)이고 기술 선택을 했으면, `3. 현재 상태/규칙/저장소 파일 규칙.md`의 "폴더 구조"대로 고른 기술에 맞는 후보 2~3개를 보여 주고 정한다. 정하면 `/l-adr`로 남긴다.
+- 저장소를 공개하기로 했으면 고른 라이선스의 표준 전문으로 `LICENSE`를 만든다 (연도 · 저작권자만 채운다). 전문을 기억으로 쓰지 말고, 확실하지 않으면 사람에게 공식 전문을 받는다.
 
 ## 4. 🌱 그린필드 — 짧은 인터뷰로 프로젝트 정의서 초안
 `docs/3. 현재 상태/프로젝트 정의서.md`의 `(필수)` 칸 세 개를 **차례로** 묻는다. 앞 답을 바탕으로 다음 칸의 후보를 만들어, 사람은 고르거나 고쳐 쓰기만 하게 한다.
@@ -99,21 +163,32 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 ## 5. 🏠 브라운필드 — 채우기 → 연결하기 → 빈칸 묻기
 1. **채우기:** 코드(무엇이 있나: 사실) + `5. 기존 문서/`(왜: 배경)를 읽고 `3. 현재 상태`의 초안을 채운다 — 시스템 구조 · 기능 목록 · 데이터 · (있으면) API.
    - 데이터: SQL 마이그레이션이 있으면 `lantern dbml from-sql <마이그레이션 폴더> --out "docs/3. 현재 상태/데이터/schema.dbml"` → `lantern dbml render`. **마이그레이션 · 실제 DB가 기준**이다.
+   - 디자인 시스템 (화면이 있을 때): 코드의 색 · 글꼴 · 간격 정의(테마 파일 · 색 에셋 · CSS 변수)를 읽어 `3. 현재 상태/규칙/디자인 시스템.md`을 채운다. 저장소에 `DESIGN.md`가 있으면 값을 옮겨 적지 않고 링크만 둔다.
    - 각 현재 상태 문서 frontmatter에 관련 코드와 확인 시점을 적는다: `lantern meta set "<문서>" 'code=[src/auth, src/api]' checked_commit=$(git rev-parse --short HEAD)`
 2. **연결하기:** 채운 내용마다 `출처: [[5. 기존 문서/…]]` 링크를 단다.
 3. **기존 문서 지도:** `5. 기존 문서/기존 문서 지도.md` 표에 문서마다 무슨 내용 · 아직 맞나 · 갈래 · 새 위치를 채운다. 갈래는 네가 추천하고 사용자는 확인만 한다:
    - 🧽 흡수 — 지금도 맞는 내용 → 핵심만 `3. 현재 상태`에 + 출처 링크
    - 🗄 보관 — 지난 기록(회의록 · 옛 기획 · 끝난 작업) → 링크만
    - 🚚 옮기기 — 계속 쓸 문서 → 원할 때 `/l-template migrate "5. 기존 문서/….md"`
-4. **빈칸 묻기:** 필수 칸만 · 짐작되면 "이게 맞나요?"로 · 한 문서의 질문은 묶어서 · "모름"은 `❓ 확인 필요`.
-5. **덤:** `lantern legacy todos`로 기존 문서의 TODO · 나중에 할 것을 모아 아이디어 후보로 보여 준다. 사용자가 고른 것만 `/l-idea`로 기록한다.
+4. **AI Context Files:** 저장소에 이미 있는 AI Context Files를 읽고 `3. 현재 상태/규칙/저장소 파일 규칙.md`의 "AI Context Files" 절을 채운다.
+   - **도입 전:** `AGENTS.md` · `CLAUDE.md` · `GEMINI.md` · `.github/copilot-instructions.md` · `.cursor/rules/` · `DESIGN.md` · `.mcp.json`, 그리고 `.claude/` · `.codex/` · `.agents/` · `openspec/` · `.specify/` · `.kiro/` 폴더를 찾아 파일마다 한 줄씩 적는다 (누가 만들었나 · 무엇이 적혀 있나). git에 올리지 않는 것도 쓰고 있으면 적는다.
+   - **바꿀 내용을 보여 주고 승인받는다.** 같은 절의 "LanternSpec" 표가 기준이다:
+     - `CLAUDE.md`가 `AGENTS.md`와 내용이 같으면 지우자고 제안한다 (Claude Code가 `AGENTS.md`를 직접 읽는다). 다르면 그대로 두고 맨 위의 `@AGENTS.md`만 확인한다.
+     - 기존 규칙과 LanternSpec 구역의 규칙이 부딪히면(예: 커밋 메시지 형식) 부딪히는 곳을 보여 주고, 기존 프로젝트의 규칙을 따르도록 맞춘다.
+     - 다른 작업 도구(OpenSpec · Spec Kit · Kiro)의 안내와 명령은 지우지 않는다. 남아 있는 곳을 알려 주고 사람이 정한다.
+   - **도입 후:** 승인된 것만 바꾸고, 파일마다 어떻게 바뀌었는지 적는다. 그대로 둔 파일은 "그대로 둠"과 이유를 적는다.
+5. **빈칸 묻기:** 필수 칸만 · 짐작되면 "이게 맞나요?"로 · 한 문서의 질문은 묶어서 · "모름"은 `❓ 확인 필요`.
+6. **덤:** `lantern legacy todos`로 기존 문서의 TODO · 나중에 할 것을 모아 아이디어 후보로 보여 준다. 사용자가 고른 것만 `/l-idea`로 기록한다.
+   저장소에 `openspec/` 폴더가 있으면 한 번 알린다: "OpenSpec의 변경을 작업과 아이디어로 옮길 수 있어요. 원하시면 `/l-init`이 끝난 뒤 `/l-migrate`를 실행해 주세요." 하지 않아도 다음 단계는 그대로 진행한다.
 
 ## 6. git hook · CI · Obsidian
 "커밋할 때 작업 ID · 스키마 기록 · 양식을 검사하는 git hook을 설치할까요? (기본은 경고만)" → 예면 `lantern hooks install`.
 2인 이상(team)이면 한 번 더: "처음부터 막을까요?" → 예면 `lantern profile set git.hooks=block`.
 (구조 실수 — 문서 저장 방식 규칙 — 는 이 값과 상관없이 항상 막는다.)
 
-`git remote -v`에 github.com이 있으면 이어서 묻는다: "GitHub에서도 검사할까요? push할 때마다 GitHub이 양식 검사 · 린트 · 타입 검사 · 테스트를 대신 돌려요 (CI)." → 예면 `lantern install --ci`.
+`git remote -v`에 github.com이 있으면 이어서 묻는다: "GitHub에서도 검사할까요? push할 때마다 GitHub이 양식 검사 · 린트 · 타입 검사 · 테스트를 대신 돌리고, PR에서는 제목과 커밋에 작업 ID가 있는지도 봐요 (CI)." → 예면 `lantern install --ci`.
+이어서 묻는다: "커밋 메시지 양식을 넣어 둘까요? `git commit`을 직접 할 때 type과 작업 ID 형식을 보여 줘요." → 예면 `lantern install --commit-template` (설정은 사람마다 한 번씩 필요하다).
+브랜치 방식이 C이면 이어서 묻는다: "GitHub 화면에서 PR을 만들 때 쓸 양식도 넣어 둘까요?" → 예면 `lantern install --pr-template` (이미 양식이 있으면 그대로 둔다).
 워크플로에 이 프로젝트 언어의 도구 준비 단계(uv · pnpm 설치 등)가 함께 들어간다. 나중에 끄려면 `lantern install --no-ci`.
 
 이어서 묻는다: "문서를 Obsidian으로 볼 때 쓰는 권장 플러그인(Dataview · Metadata Menu)을 같이 받아 둘까요? 상태 · 종류를 고르는 메뉴와 할 일 표시가 바로 동작해요." (추천: 예) → 예면 `lantern obsidian plugins`.
@@ -121,7 +196,7 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 - 받지 못하면(인터넷 없음 등) 실패로 멈추지 말고, Obsidian의 커뮤니티 플러그인에서 두 플러그인을 직접 설치하면 된다고 알린다.
 
 ## 7. 작업 방식 추천 · 공통 마무리
-`lantern harness suggest`로 프로젝트 크기에 맞는 AI 작업 방식(하네스 · 루프 · 그래프)을 한 줄로 알려 주고, 사용자가 원하면 `--apply` 뒤 `lantern upgrade`.
+`lantern build-mode suggest`로 프로젝트 크기에 맞는 구현 방식(반복 범위 · 할 일 나눠 맡기기 · 작업 동시 진행)을 축마다 한 줄로 알려 주고, 사용자가 원하면 `--apply`(반복 범위만 바뀜) 뒤 `lantern upgrade`.
 ```bash
 lantern close l-init
 ```
@@ -136,5 +211,6 @@ lantern close l-init
 4. 추가하기로 한 문서에 필요한 질문만 이어서 한다 (`--plan` 출력의 "물을 것" 참고: 웹 → 배포 방식, 팀 → 팀원 이름).
 5. `lantern scaffold init` — 새 문서만 만들고 기존 문서는 그대로. 필요 없어진 문서는 지우지 않고 "사용 안 함"으로 표시된다. 이미 있는 문서에 새 유형 칸(예: `## 웹`)이 필요하면 해당 문서에 칸을 추가한다.
 6. 문서 저장 방식(shared ↔ local)은 여기서 바꾸지 않는다 → `lantern docs-mode local|shared`.
+   브랜치 방식을 바꾸려면 위 표의 값을 `lantern profile set git.base=dev git.pr=deploy git.deploy=main`처럼 고치고(이름 규칙은 `git.branch`), `lantern upgrade`. 진행 중인 작업은 지금 브랜치를 그대로 쓴다.
 7. `idea.capture` 같은 스킬 동작 값이나 프로젝트 종류(`project.kind` · `project.external` · `project.languages`)가 바뀌었으면 `lantern upgrade` (스킬 · AGENTS.md의 개발 원칙 · 개발 원칙 문서를 다시 만든다).
 8. 공통 마무리 `lantern close l-init`.

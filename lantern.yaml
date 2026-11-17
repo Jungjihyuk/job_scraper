@@ -13,11 +13,13 @@ project:
   kind: service              # script | cli | library | service | data — 설계 원칙을 고르는 기준
   external: true         # 바깥 도구 · 서비스(AI 도구 · 결제 · 외부 API 등)에 붙나
   languages: [python, typescript]        # 코드 컨벤션을 고를 언어 (go, python, rust, swift, typescript)
+  lifespan: short          # short(짧게 시험) | long(오래 운영: README · CHANGELOG · 폴더 구조를 함께 정함)
   code_size: medium         # small | medium | large — 잰 값 (lantern principles detect). 경계를 넘으면 lantern doctor가 올릴지 묻는다
 
 docs:
   root: docs/
   remote: local          # shared(같이 올림) | local(문서는 원격에 안 올림) — 바꿀 때는 lantern docs-mode
+  commit: auto          # auto(스킬이 마칠 때 그 작업의 문서를 커밋) | manual(직접 커밋)
 
 knowledge:                  # 배우는 선로. 없으면 이 블록을 지운다
   type: obsidian            # obsidian | folder(아무 Markdown 폴더)
@@ -28,14 +30,20 @@ design:
   tool: claude-design       # claude-design | figma | canva (각 도구의 MCP) | none
   approval: required  # required(항상 승인) | auto(작은 설계는 건너뜀) | off
 
+verify:
+  browser: auto    # auto(AI 도구의 브라우저 조종 기능) | none(화면은 사람이 확인) | <스킬 · MCP 이름>
+
 git:
   hooks: warn              # warn(경고만) | block(막기) — 커밋 메시지 · 스키마 기록 · 문서 양식 검사에만 적용
   base: dev                 # 작업 브랜치를 머지할 기준 브랜치 (main | dev …)
-  # 스키마 파일. 예전 SQL(job_scraper_db.sql · dump.sql)은 실제 스키마와 달라 빼고, 실제 DB 스냅샷을 쓴다
-  schema_paths:
-    - "**/alembic/versions/**"
-    - "backend/app/db/schema.sql"
-    - "**/*.dbml"
+  # 작업 브랜치 이름. 기본값 work/{id}는 work/W-012처럼 자동으로 만들어진다 ({id} = 작업 ID)
+  # 다른 규칙을 쓰려면 바꾼다. 예:
+  #   feature/{id}         → feature/W-012
+  #   feature/{id}-{slug}  → feature/W-012-login  ({slug}처럼 {id}가 아닌 칸은 작업마다 이름을 정한다)
+  branch: feature/{id}-{slug}
+  pr: none                   # none(PR 없음) | deploy(배포 때 기준 → 배포 브랜치 PR) | work(작업마다 PR)
+  deploy: main               # 배포 브랜치 (pr: deploy일 때)
+  schema_paths: ['**/alembic/versions/**', backend/app/db/schema.sql, '**/*.dbml']  # 스키마 파일 위치 (스키마 기록 검사)
 
 idea:
   capture: manual           # manual(직접 부를 때만) | ask(알아채고 묻기) | auto(알아서 기록)
@@ -50,7 +58,7 @@ learn:
 build:
   report_cycle: work        # work(작업마다) | criterion(수락 기준마다) | task(할 일마다) — 문제가 생기면 언제든 바로 보고
   merge_approval: required  # required(반영 전 승인) | auto(반영 후 요약 보고)
-  loop: 'off'                # off(할 일 안의 작은 반복만) | on(수락 기준 테스트가 통과할 때까지 작업 전체를 다시) — lantern harness suggest
+  loop: 'off'                # off(할 일마다 확인) | on(수락 기준 테스트가 통과할 때까지 자동 반복) — lantern build-mode suggest
   loop_limit: 3           # 큰 반복 최대 횟수
   test: cd backend && uv run pytest   # 테스트 명령 (work finish · scan --tests)
   format: cd backend && uv run ruff format --check app/   # 포맷 명령 (고친 뒤 돌린다)
@@ -61,7 +69,7 @@ check:
 report:
   views: [kanban, timeline, debt]
 code:
-  # 영역 = 패키지 설정 파일(pyproject.toml · package.json 등)이 따로 있는 하위 프로젝트 — lantern parts (영역마다 AGENTS.md가 생긴다)
+  # 영역 = 패키지 설정 파일(pyproject.toml · package.json 등)이 따로 있는 하위 프로젝트 — lantern parts (영역마다 AGENTS.md가 생기고, ci: false면 CI에서 뺀다)
   parts:
   - path: analysis
     languages:

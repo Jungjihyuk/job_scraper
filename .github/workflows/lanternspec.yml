@@ -39,3 +39,9 @@ jobs:
         if: hashFiles('lantern.yaml') != ''
       - name: 문서-코드 어긋남 + 수락 기준 테스트 (lantern scan --tests)
         run: lantern scan --tests --ci
+      - name: PR 제목과 커밋의 작업 ID (lantern check-pr)
+        if: github.event_name == 'pull_request' && !endsWith(github.actor, '[bot]') && hashFiles('lantern.yaml') != ''
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+        run: lantern check-pr --title "$PR_TITLE" --range "$PR_RANGE"
